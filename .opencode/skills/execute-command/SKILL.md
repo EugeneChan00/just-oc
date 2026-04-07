@@ -1,0 +1,1 @@
+/home/zz/.agent/skills/execute-command/SKILL.md

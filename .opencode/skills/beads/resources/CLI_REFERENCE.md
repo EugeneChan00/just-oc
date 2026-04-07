@@ -1,0 +1,1 @@
+/home/zz/.agent/skills/beads/resources/CLI_REFERENCE.md

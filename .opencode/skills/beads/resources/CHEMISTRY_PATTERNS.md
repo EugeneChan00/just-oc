@@ -1,0 +1,1 @@
+/home/zz/.agent/skills/beads/resources/CHEMISTRY_PATTERNS.md

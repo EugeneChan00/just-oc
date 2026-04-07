@@ -1,0 +1,14 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "instructions": [
+    "./AGENTS.md"
+  ],
+  "agent": {
+    "general": {
+      "description": "General purpose research and execution agent"
+    },
+    "explore": {
+      "description": "Fast read-only codebase exploration"
+    }
+  }
+}
