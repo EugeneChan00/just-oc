@@ -261,7 +261,7 @@ class OptimizationDriver:
                 print(f"[AGENT CHECK]   Parse error: {e}")
                 continue
 
-            # Check 3: Can opencode invoke this agent?
+            # Check 3: Can opencode invoke this agent? (fast check with 5s timeout)
             print(
                 f"[AGENT CHECK]   Testing 'opencode run --agent {agent_name} --format json'..."
             )
@@ -271,7 +271,7 @@ class OptimizationDriver:
                     input="test",
                     capture_output=True,
                     text=True,
-                    timeout=30,
+                    timeout=15,
                 )
                 if result.returncode == 0:
                     # Check if it fell back to default agent
@@ -302,7 +302,7 @@ class OptimizationDriver:
                 errors.append(
                     {
                         "agent": agent_name,
-                        "error": "OpenCode invocation timed out after 30s",
+                        "error": "OpenCode invocation timed out after 15s",
                     }
                 )
                 print(f"[AGENT CHECK]   OpenCode invocation: TIMEOUT")
