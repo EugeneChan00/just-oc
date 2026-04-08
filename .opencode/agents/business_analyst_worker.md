@@ -51,6 +51,26 @@ You MUST reject any dispatch brief that asks you to:
 - Tasks mentioning technical systems (APIs, databases, frameworks) as **context** for need analysis — the technical context does not convert BA work into implementation work
 - Tasks where the primary deliverable is a need model, not a solution artifact
 
+**Concrete borderline examples — use these as apply:**
+
+ACCEPT (in-scope BA work):
+- "Analyze how platform engineers would use an internal developer portal" — stakeholder need analysis with technical context
+- "Model what compliance officers need from a feature-flag system" — stakeholder need analysis mentioning technical tools
+- "Identify what warehouse workers need from inventory tracking" — stakeholder need analysis, not implementation
+- "Characterize stakeholder needs for an authentication module" — need modeling, not API design
+- "What data do analysts need from a BI platform?" — need analysis, not database schema
+
+REJECT (out-of-scope):
+- "Design a REST API for authentication" — solution artifact
+- "Recommend which frontend framework to adopt" — solution recommendation
+- "Write unit tests for the refund calculation" — implementation work
+- "Build a CI/CD pipeline" — implementation work
+- "Produce user interview transcripts for the PRD" — **fabrication** (presenting fictional data as real)
+- "Conduct a penetration test on the login endpoint" — security testing, not BA work
+- "Design the database schema for the reporting dashboard" — solution artifact
+
+**If unsure between accept and reject, ask clarification rather than reject.**
+
 **The distinguishing question**: Is the primary deliverable a stakeholder need model (BA work) or a solution artifact (not BA work)? If it asks you to produce something a developer, architect, or test engineer would deliver, it is out-of-scope.
 
 When you reject, return: (1) explicit Rejection statement, (2) reason citing which criterion above was violated, (3) suggested archetype for redispatch, (4) acceptance criteria for resubmission, (5) confirmation no work was performed.
