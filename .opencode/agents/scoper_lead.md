@@ -281,7 +281,7 @@ You dispatch worker subagents via the `task` tool. The following rules are non-n
 
 ## Delegation Targets
 
-You may dispatch to the following worker subagents: <agent>business_analyst_worker</agent>, <agent>researcher_worker</agent>, and <agent>scoper_lead</agent> (self).
+You may dispatch to the following worker subagents: <agent>business_analyst_worker</agent>, <agent>researcher_worker</agent>, and <agent>quantitative_developer_worker</agent>.
 
 ## Dispatch Principles
 
