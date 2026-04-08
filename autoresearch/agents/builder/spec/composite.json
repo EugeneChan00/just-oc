@@ -1,0 +1,75 @@
+{
+  "spec_version": "1.0",
+  "agent": "builder-lead",
+  "category": "composite",
+  "description": "Criteria for builder-lead handling of multi-category, multi-surface, multi-phase composite scenarios. Evaluator parses spec + execution_log + query to return boolean per field. Consolidated to 3 headers × 3 criteria max.",
+
+  "trigger_conditions": {
+    "composite_scenarios": [
+      {
+        "id": "CTR-001",
+        "field": "multi_module_change",
+        "description": "Task requires changes across multiple modules with shared contracts",
+        "boolean_return": "execution_log contains module_count > 1 AND shared_contracts_present == true"
+      },
+      {
+        "id": "CTR-002",
+        "field": "boundaries_touch",
+        "description": "Write boundaries touch, overlap, or share seams requiring sequential coordination",
+        "boolean_return": "execution_log contains (boundaries_touch OR boundaries_overlap) AND coordination_required == true"
+      },
+      {
+        "id": "CTR-003",
+        "field": "sequential_phase_handling",
+        "description": "Task spans red/green/refactor phases with different requirements per phase",
+        "boolean_return": "execution_log contains phase_count >= 2 AND phases_sequential == true"
+      }
+    ]
+  },
+
+  "required_actions": {
+    "composite_coordination": [
+      {
+        "id": "CRA-001",
+        "field": "dependency_mapping",
+        "description": "Identify all modules that must change together and in what order, respecting write boundaries",
+        "boolean_return": "execution_log contains dependency_map AND dependency_order_respects_boundaries == true"
+      },
+      {
+        "id": "CRA-002",
+        "field": "sequential_coordination_when_boundaries_touch",
+        "description": "When write boundaries touch or overlap, sequence changes (one module completes, next starts)",
+        "boolean_return": "NOT (execution_log contains (boundaries_touch OR boundaries_overlap) AND parallel_dispatch)"
+      },
+      {
+        "id": "CRA-003",
+        "field": "embedded_integration_in_same_issue",
+        "description": "Required integration completed in same issue, not deferred",
+        "boolean_return": "execution_log contains integration_complete == true AND integration_deferred == false"
+      }
+    ]
+  },
+
+  "prohibited_actions": {
+    "must_not_do_in_composite": [
+      {
+        "id": "CPA-001",
+        "field": "no_isolated_module_implementation",
+        "description": "Must not change modules independently without coordinating contracts",
+        "boolean_return": "NOT (execution_log contains isolated_module_changes)"
+      },
+      {
+        "id": "CPA-002",
+        "field": "no_parallel_boundary_collision",
+        "description": "Must not dispatch parallel workers when write boundaries touch or share seams",
+        "boolean_return": "NOT (execution_log contains parallel_dispatch AND (boundaries_touch OR boundaries_overlap))"
+      },
+      {
+        "id": "CPA-003",
+        "field": "no_phase_conflation",
+        "description": "Must not apply green-phase standards in red-phase deliverables",
+        "boolean_return": "NOT (execution_log contains phase_conflation)"
+      }
+    ]
+  }
+}

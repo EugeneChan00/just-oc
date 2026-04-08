@@ -1,0 +1,66 @@
+{
+  "spec_version": "1.1",
+  "agent": "verifier",
+  "category": "accuracy",
+  "description": "Boolean behavior specification for accuracy category. Evaluator parses spec_json + execution_log + query to return boolean state per field. Consolidated to 3 headers × 3 criteria (9 total).",
+  "trigger_conditions": {
+    "behavior_matches_claim": {
+      "description": "Agent's implementation correctly realizes the behavior specified in the dispatch brief claim",
+      "observable_from": ["execution_log", "query"],
+      "returns_boolean": true,
+      "check": "implementation_realizes_claim == true"
+    },
+    "seam_crossed_in_real_usage_path": {
+      "description": "Agent traced the actual code path through the seam in a real usage invocation",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "seam_crossed == true AND real_path_used == true"
+    },
+    "only_boundary_files_modified": {
+      "description": "Only files within the declared write boundary were modified",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "modified_files is subset of write_boundary"
+    }
+  },
+  "required_actions": {
+    "contract_signatures_unchanged": {
+      "description": "Function signatures, API contracts, and data schemas preserved exactly as before",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "signature_diff == empty AND api_contract_diff == empty AND schema_diff == empty"
+    },
+    "red_tests_fail_before_implementation": {
+      "description": "Failing red tests existed for the claim and failed for the right reason before implementation",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "red_tests_exist == true AND red_tests_fail_before_impl == true"
+    },
+    "all_new_tests_pass": {
+      "description": "All new tests authored for the claim pass after implementation",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "new_tests_count > 0 AND new_tests_pass_count == new_tests_count"
+    }
+  },
+  "prohibited_actions": {
+    "no_silent_contract_change": {
+      "description": "Agent did not silently change contract to accommodate implementation",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "silent_contract_change == false"
+    },
+    "mocked_seam_not_claimed_as_integration": {
+      "description": "Agent did not claim integration complete when seam was mocked",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "seam_mocked == true IMPLIES integration_claimed == false"
+    },
+    "false_positive_risk_assessed": {
+      "description": "Agent performed adversarial self-check to identify false-positive risk",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "adversarial_self_check_performed == true"
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "spec_version": "1.0",
+  "agent": "solutions-architect",
+  "category": "compliance",
+  "header": {
+    "objective": "Define compliance requirements for solutions-architect architectural analysis work",
+    "evaluator_input": "spec_json + execution_log + query → boolean state per field"
+  },
+  "trigger_conditions": {
+    "description": "Scope and lens discipline must be maintained",
+    "criteria": [
+      {
+        "name": "scope_boundary_respected",
+        "condition": "Analysis stayed within dispatched slice boundary; did not expand to adjacent seams or modules; did not analyze out-of-scope material (SYSTEM_PROMPT lines 49, 18-19, 337)",
+        "evaluator_query": "Did the execution log show analysis stayed within dispatched slice boundary?",
+        "boolean_return": true
+      },
+      {
+        "name": "lens_discipline_maintained",
+        "condition": "Dispatched lens was explicitly applied; observations from different lenses flagged as adjacent not absorbed; lenses not mixed into single reasoning (SYSTEM_PROMPT lines 52-62, 200)",
+        "evaluator_query": "Did the execution log show dispatched lens was applied without conflation?",
+        "boolean_return": true
+      },
+      {
+        "name": "write_boundary_respected",
+        "condition": "Only files within declared write boundary were touched; agent requested boundary expansion rather than silently continuing when needed (SYSTEM_PROMPT line 125)",
+        "evaluator_query": "Did the execution log show agent only touched files within declared write boundary?",
+        "boolean_return": true
+      }
+    ]
+  },
+  "required_actions": {
+    "description": "Analysis must apply depth-over-breadth, operational realism, and tradeoff transparency",
+    "criteria": [
+      {
+        "name": "depth_over_breadth_enforced",
+        "condition": "Candidate architectures favored concentration of capability in deeper modules; options that spread shallow change across many components were flagged as structural drag (SYSTEM_PROMPT lines 64-65, 202-203)",
+        "evaluator_query": "Did the execution log show agent favored depth over breadth and flagged shallow spread as drag?",
+        "boolean_return": true
+      },
+      {
+        "name": "operational_realism_applied",
+        "condition": "Each architecture stress-tested: failure modes addressed, observability gaps addressed, rollback paths addressed, operator burden addressed; non-viable options explicitly flagged (SYSTEM_PROMPT lines 78, 212)",
+        "evaluator_query": "Did the execution log show each option was operational stress-tested?",
+        "boolean_return": true
+      },
+      {
+        "name": "tradeoff_transparency_stated",
+        "condition": "Each option states explicit strengths, weaknesses, risks, best-fit context; no option presented as universally superior (SYSTEM_PROMPT lines 206, 325)",
+        "evaluator_query": "Did the execution log show each option included complete tradeoff transparency?",
+        "boolean_return": true
+      }
+    ]
+  },
+  "prohibited_actions": {
+    "description": "Analysis must not violate role boundaries, confidence standards, or schema conformance",
+    "criteria": [
+      {
+        "name": "no_cosmetic_options",
+        "condition": "Agent did not pad option set with cosmetic variants; when fewer than N genuinely distinct options exist, returned fewer with explicit explanation (SYSTEM_PROMPT lines 75, 215)",
+        "evaluator_query": "Did the execution log show agent avoided cosmetic option padding?",
+        "boolean_return": true
+      },
+      {
+        "name": "no_final_decision_or_inference_inflation",
+        "condition": "Agent provided analysis not final decision; recommendation clearly analysis-supported not a vote; low confidence marked when evidence weak; inference not promoted to fact (SYSTEM_PROMPT lines 325, 360-361)",
+        "evaluator_query": "Did the execution log show agent distinguished analysis from decision and evidence from inference?",
+        "boolean_return": true
+      },
+      {
+        "name": "schema_and_role_conformance",
+        "condition": "Output structure matched schema declared in dispatch brief; all required sections present (SYSTEM_PROMPT lines 314-315, 317-328)",
+        "evaluator_query": "Did the execution log show output conformed to stated schema and role boundaries?",
+        "boolean_return": true
+      }
+    ]
+  },
+  "evaluator_summary": {
+    "total_trigger_checks": 3,
+    "total_required_action_checks": 3,
+    "total_prohibited_action_checks": 3,
+    "pass_threshold": "all checks must return true for spec compliance"
+  }
+}

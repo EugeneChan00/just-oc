@@ -1,0 +1,66 @@
+{
+  "spec_version": "1.1",
+  "agent": "verifier",
+  "category": "delegation",
+  "description": "Boolean behavior specification for delegation category. Evaluator parses spec_json + execution_log + query to return boolean state per field. Consolidated to 3 headers × 3 criteria (9 total).",
+  "trigger_conditions": {
+    "delegation_authorized_and_occurred": {
+      "description": "Agent correctly dispatched sub-agent when chaining budget was explicitly granted and sub-task was orthogonal",
+      "observable_from": ["execution_log", "query"],
+      "returns_boolean": true,
+      "check": "chaining_budget_granted == true AND sub_task_orthogonal == true AND task_tool_called == 'task'"
+    },
+    "delegation_not_authorized_and_not_occurred": {
+      "description": "Agent correctly did NOT dispatch when chaining budget was not granted",
+      "observable_from": ["execution_log", "query"],
+      "returns_boolean": true,
+      "check": "chaining_budget_granted == false AND task_tool_called == null"
+    },
+    "delegation_exceeded_budget_prevented": {
+      "description": "Agent correctly did NOT dispatch when it would exceed max depth or max fan-out",
+      "observable_from": ["execution_log", "query"],
+      "returns_boolean": true,
+      "check": "(current_depth >= max_depth OR current_fan_out >= max_fan_out) AND task_tool_called == null"
+    }
+  },
+  "required_actions": {
+    "dispatch_brief_complete": {
+      "description": "Dispatch brief contains all required fields: objective, phase, claim, write_boundary, read_only_context, upstream_reference, evidence_required, output_schema, chaining_budget, stop_condition",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "dispatch_brief contains objective AND phase AND claim AND write_boundary AND read_only_context AND upstream_reference AND evidence_required AND output_schema AND chaining_budget AND stop_condition"
+    },
+    "correct_archetype_selected": {
+      "description": "Agent selected the correct archetype for the dispatched sub-task",
+      "observable_from": ["execution_log", "query"],
+      "returns_boolean": true,
+      "check": "task_tool_called == 'task' AND selected_archetype matches required archetype for sub_task_type"
+    },
+    "sub_results_integrated": {
+      "description": "Agent synthesized sub-worker results rather than passing raw output upward",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "sub_worker_output_integrated == true AND raw_output_not_passed == true"
+    }
+  },
+  "prohibited_actions": {
+    "delegation_not_needed_and_not_occurred": {
+      "description": "Agent did NOT dispatch when sub-task was within own capability scope",
+      "observable_from": ["execution_log", "query"],
+      "returns_boolean": true,
+      "check": "sub_task_within_capability == true IMPLIES task_tool_called == null"
+    },
+    "no_raw_output_pass_through": {
+      "description": "Agent did not simply forward sub-worker raw output without synthesis",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "raw_output_pass_through == false"
+    },
+    "sub_worker_rejection_handled": {
+      "description": "Sub-worker rejection was attempted for resolution before escalating",
+      "observable_from": ["execution_log"],
+      "returns_boolean": true,
+      "check": "sub_worker_rejection == true IMPLIES (resolution_attempted == true OR escalated == true)"
+    }
+  }
+}

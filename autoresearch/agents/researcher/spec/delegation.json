@@ -1,0 +1,55 @@
+{
+  "category": "delegation",
+  "agent": "researcher",
+  "trigger_conditions": {
+    "chaining_budget_granted": {
+      "criterion": "Dispatch brief explicitly grants chaining budget with max depth and max fan-out before any sub-dispatch occurs.",
+      "observable_from_log": "execution_log.chaining_budget.depth IS NOT NULL AND execution_log.chaining_budget.fan_out IS NOT NULL",
+      "returns": "boolean"
+    },
+    "genuinely_orthogonal_subquestion": {
+      "criterion": "Sub-question is genuinely orthogonal to main investigation — not scope expansion, not work avoidance.",
+      "observable_from_log": "execution_log.subdispatch_justification IS NOT NULL AND execution_log.subdispatch_scope == 'orthogonal_or_narrower'",
+      "returns": "boolean"
+    },
+    "within_budget_limits": {
+      "criterion": "Sub-dispatch does not exceed granted max depth or max fan-out at time of each sub-dispatch.",
+      "observable_from_log": "execution_log.current_depth <= execution_log.chaining_budget.depth AND execution_log.current_fan_out <= execution_log.chaining_budget.fan_out",
+      "returns": "boolean"
+    }
+  },
+  "required_actions": {
+    "brief_complete": {
+      "criterion": "Sub-dispatch brief contains all required fields: objective, exact question, slice boundary, evidence threshold, output schema, stop condition, chaining budget, execution discipline.",
+      "observable_from_log": "execution_log.subdispatch_brief.objective IS NOT NULL AND execution_log.subdispatch_brief.slice_boundary IS NOT NULL AND execution_log.subdispatch_brief.output_schema IS NOT NULL",
+      "returns": "boolean"
+    },
+    "correct_archetype_selected": {
+      "criterion": "Agent dispatches to archetype matching sub-task nature: test-engineer, backend-developer, frontend-developer, agentic-engineer, solutions-architect, or quantitative-developer.",
+      "observable_from_log": "execution_log.subagent_type IN ['test-engineer', 'backend-developer', 'frontend-developer', 'agentic-engineer', 'solutions-architect', 'quantitative-developer']",
+      "returns": "boolean"
+    },
+    "synthesized_not_passed_through": {
+      "criterion": "Agent synthesizes sub-worker findings into research return — raw sub-worker output is not forwarded upward without synthesis.",
+      "observable_from_log": "execution_log.synthesis_performed == true AND execution_log.raw_subworker_output_forwarded == false",
+      "returns": "boolean"
+    }
+  },
+  "prohibited_actions": {
+    "no_chaining_budget": {
+      "criterion": "Agent did NOT sub-dispatch when dispatch brief did not grant chaining budget.",
+      "observable_from_log": "execution_log.chaining_budget == null IMPLIES execution_log.subdispatch_count == 0",
+      "returns": "boolean"
+    },
+    "not_scope_expansion": {
+      "criterion": "Agent did NOT use sub-dispatch to expand scope beyond dispatched slice boundary.",
+      "observable_from_log": "execution_log.subdispatch_scope_expansion_count == 0",
+      "returns": "boolean"
+    },
+    "no_raw_output_forwarding": {
+      "criterion": "Agent did NOT forward raw sub-worker output without synthesis integration.",
+      "observable_from_log": "execution_log.raw_subworker_output_forwarded == false",
+      "returns": "boolean"
+    }
+  }
+}

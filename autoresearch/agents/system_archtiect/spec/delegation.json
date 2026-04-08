@@ -1,0 +1,62 @@
+{
+  "header": {
+    "agent": "system_archtiect",
+    "category": "delegation",
+    "spec_version": "1.0",
+    "description": "Boolean-return behavior specification for delegation category. Evaluator reads: spec_json + execution_log + query → returns boolean state per field."
+  },
+  "trigger_conditions": {
+    "header": "DELEGATION TRIGGER CONDITIONS — Agent MUST delegate when ALL conditions are true",
+    "chaining_budget_granted": {
+      "field": "chaining_budget_granted",
+      "description": "Dispatch brief explicitly grants a chaining budget with max depth and max fan-out.",
+      "observable_from_log": "Dispatch brief contains chaining_budget field with max_depth and max_fan_out values greater than zero."
+    },
+    "genuinely_orthogonal_subtask": {
+      "field": "genuinely_orthogonal_subtask",
+      "description": "Sub-task is genuinely orthogonal to the main architecture task and requires its own narrow vertical slice.",
+      "observable_from_log": "Sub-task requires different expertise domain (e.g., harness primitive, test authoring) than the architecture delta task."
+    },
+    "subtask_in_other_archetype_lane": {
+      "field": "subtask_in_other_archetype_lane",
+      "description": "Sub-task falls within another archetype's lane (BACKEND_DEVELOPER for harness, TEST_ENGINEER for tests, RESEARCHER for patterns).",
+      "observable_from_log": "Sub-task nature matches another archetype's declared scope per AGENTS.md or dispatch brief."
+    }
+  },
+  "required_actions": {
+    "header": "REQUIRED ACTIONS — Agent MUST do these when delegating",
+    "verify_chaining_budget_before_dispatch": {
+      "field": "verify_chaining_budget_before_dispatch",
+      "description": "Verify chaining budget is explicitly granted before dispatching.",
+      "observable_from_log": "execution_log shows chaining_budget check or confirmation before sub-agent dispatch call."
+    },
+    "author_complete_brief": {
+      "field": "author_complete_brief",
+      "description": "Include all required dispatch fields: objective, exact question, slice boundary, upstream reference, evidence threshold, output schema, stop condition, chaining budget, execution discipline.",
+      "observable_from_log": "Sub-dispatch brief contains all 9 required fields: objective, exact_question, slice_boundary, upstream_reference, evidence_threshold, output_schema, stop_condition, chaining_budget, execution_discipline."
+    },
+    "synthesize_not_pass_raw": {
+      "field": "synthesize_not_pass_raw",
+      "description": "Integrate sub-worker findings into system_architect's return rather than passing raw output upward.",
+      "observable_from_log": "Agent return contains synthesis of sub-worker results, not raw sub-worker output verbatim."
+    }
+  },
+  "prohibited_actions": {
+    "header": "PROHIBITED ACTIONS — Agent MUST NOT do these during delegation",
+    "no_unauthorized_dispatch": {
+      "field": "no_unauthorized_dispatch",
+      "description": "Dispatch without explicit chaining budget in dispatch brief.",
+      "observable_from_log": "sub-agent dispatch did not occur OR occurred after chaining_budget was confirmed granted."
+    },
+    "no_budget_overflow": {
+      "field": "no_budget_overflow",
+      "description": "Exceed max depth or max fan-out.",
+      "observable_from_log": "dispatch depth never exceeds max_depth AND total dispatches never exceed max_fan_out."
+    },
+    "no_within_capability_dispatch": {
+      "field": "no_within_capability_dispatch",
+      "description": "Dispatch sub-workers for tasks within own architecture capability.",
+      "observable_from_log": "All dispatched sub-tasks are outside system_architect scope (boundaries/interfaces/state/contracts/invariants)."
+    }
+  }
+}

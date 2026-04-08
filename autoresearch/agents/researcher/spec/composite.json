@@ -1,0 +1,55 @@
+{
+  "category": "composite",
+  "agent": "researcher",
+  "trigger_conditions": {
+    "multi_dimension_dispatch": {
+      "criterion": "Single dispatched task combines multiple behavior categories (rejection, delegation, compliance, accuracy) requiring simultaneous compliance tracking.",
+      "observable_from_log": "execution_log.categories_in_dispatch COUNT > 1",
+      "returns": "boolean"
+    },
+    "mechanism_plus_comparison": {
+      "criterion": "Task requires both mechanism extraction AND comparative analysis across patterns simultaneously.",
+      "observable_from_log": "execution_log.mechanism_analysis_required == true AND execution_log.comparative_analysis_required == true",
+      "returns": "boolean"
+    },
+    "within_budget_limits": {
+      "criterion": "Sub-dispatches (if any) stay within granted chaining budget depth and fan-out.",
+      "observable_from_log": "execution_log.current_depth <= execution_log.chaining_budget.depth AND execution_log.current_fan_out <= execution_log.chaining_budget.fan_out",
+      "returns": "boolean"
+    }
+  },
+  "required_actions": {
+    "category_tracking": {
+      "criterion": "Agent tracks compliance separately per category dimension — rejection, delegation, compliance, and accuracy each verified independently.",
+      "observable_from_log": "execution_log.category_results.rejection !== undefined AND execution_log.category_results.delegation !== undefined AND execution_log.category_results.compliance !== undefined AND execution_log.category_results.accuracy !== undefined",
+      "returns": "boolean"
+    },
+    "synthesis_integrates_all_dimensions": {
+      "criterion": "Agent synthesizes findings into coherent integrated return — not isolated dimension dumps or concatenated sub-reports.",
+      "observable_from_log": "execution_log.isolated_dimension_dump_count == 0 AND execution_log.subdispatch_raw_concatenation_count == 0",
+      "returns": "boolean"
+    },
+    "gaps_mapped_per_dimension": {
+      "criterion": "Agent reports confidence level and maps evidence gaps per dimension, not globally.",
+      "observable_from_log": "execution_log.per_dimension_confidence_count >= execution_log.categories_in_dispatch COUNT AND execution_log.gaps_per_dimension_mapped == true",
+      "returns": "boolean"
+    }
+  },
+  "prohibited_actions": {
+    "no_isolated_dimension_reports": {
+      "criterion": "Agent did NOT return each dimension as separate isolated report without synthesis.",
+      "observable_from_log": "execution_log.isolated_dimension_report_count == 0",
+      "returns": "boolean"
+    },
+    "no_tertiary_as_primary": {
+      "criterion": "Agent did NOT use tertiary sources as primary evidence in any dimension.",
+      "observable_from_log": "execution_log.tertiary_citations COUNT == 0",
+      "returns": "boolean"
+    },
+    "no_scope_inflation_via_subdispatch": {
+      "criterion": "Agent did NOT use sub-dispatch to expand scope beyond the composite vertical slice.",
+      "observable_from_log": "execution_log.subdispatch_scope_expansion_count == 0",
+      "returns": "boolean"
+    }
+  }
+}

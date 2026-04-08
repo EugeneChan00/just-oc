@@ -1,0 +1,1 @@
+/home/zz/.agent/skills/find-skills/SKILL.md

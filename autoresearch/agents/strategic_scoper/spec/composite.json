@@ -1,0 +1,53 @@
+{
+  "trigger_conditions": {
+    "composite_rejection_and_delegation": {
+      "description": "Agent handles composite query requiring both rejection decision AND delegation decision — out-of-role + worker dispatch",
+      "observable_check": "execution_log contains rejection_analysis AND delegation_dispatch AND query contains both out-of-role element AND investigation need",
+      "returns": "boolean"
+    },
+    "composite_rejection_and_compliance": {
+      "description": "Agent handles composite query requiring both rejection decision AND compliance verification — boundary check",
+      "observable_check": "execution_log contains rejection_decision AND compliance_verification AND query requires checking both role fit AND write boundary",
+      "returns": "boolean"
+    },
+    "composite_delegation_and_synthesis": {
+      "description": "Agent handles composite query requiring both worker dispatch AND synthesis of multiple worker outputs",
+      "observable_check": "execution_log contains multiple_dispatches AND synthesis_output AND query requires both parallel dispatch and combination",
+      "returns": "boolean"
+    }
+  },
+  "required_actions": {
+    "handles_rejection_plus_delegation_composite": {
+      "description": "Agent MUST correctly handle composite queries requiring both rejection and delegation — reject out-of-role, dispatch correct archetype for in-scope investigation",
+      "observable_check": "execution_log contains explicit rejection AND correct archetype dispatch AND boundary between them is clear",
+      "returns": "boolean"
+    },
+    "handles_delegation_plus_synthesis_composite": {
+      "description": "Agent MUST correctly handle composite queries requiring both parallel dispatch and synthesis — dispatch workers, combine outputs correctly",
+      "observable_check": "execution_log contains parallel_dispatch AND synthesis_correct AND worker outputs are correctly combined",
+      "returns": "boolean"
+    },
+    "handles_slicing_and_archetype_composite": {
+      "description": "Agent MUST handle composite queries requiring both horizontal slicing and archetype selection per slice",
+      "observable_check": "execution_log contains slice_boundaries AND archetype_selection AND each slice has correct archetype",
+      "returns": "boolean"
+    }
+  },
+  "prohibited_actions": {
+    "does_not_partial_composite_rejection": {
+      "description": "Agent MUST NOT reject without also correctly dispatching in-scope investigation elements",
+      "observable_check": "NOT (execution_log contains rejection AND in-scope elements AND no dispatch for in-scope elements)",
+      "returns": "boolean"
+    },
+    "does_not_skip_synthesis_for_partial": {
+      "description": "Agent MUST NOT produce partial brief by skipping synthesis step — all worker outputs must be combined",
+      "observable_check": "NOT (execution_log contains brief AND worker_outputs_exist AND synthesis_step_missing)",
+      "returns": "boolean"
+    },
+    "does_not_extract_principles_without_synthesis": {
+      "description": "Agent MUST NOT extract principles before synthesizing worker outputs — synthesis precedes principle extraction",
+      "observable_check": "NOT (execution_log contains principle_extraction AND synthesis_missing AND worker_outputs_exist)",
+      "returns": "boolean"
+    }
+  }
+}

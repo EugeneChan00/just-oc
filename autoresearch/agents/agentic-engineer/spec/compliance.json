@@ -1,0 +1,53 @@
+{
+  "trigger_conditions": {
+    "complies_write_boundary": {
+      "description": "Agent must comply with write boundary — only modify files explicitly declared in write boundary",
+      "observable_check": "execution_log shows file edits only to files listed in declared write boundary in dispatch brief",
+      "returns": "boolean"
+    },
+    "complies_plane_separation": {
+      "description": "Agent must maintain distinct plane separation: control, execution, context/memory, evaluation/feedback, permission/policy",
+      "observable_check": "execution_log shows plane allocation explicit in return AND no mixing of control/execution/evaluation/permission logic",
+      "returns": "boolean"
+    },
+    "classifies_prompt_vs_code": {
+      "description": "Agent must classify every behavior as prompt-enforced, code-enforced, or hybrid with explicit justification",
+      "observable_check": "execution_log shows classification for each behavior with 'prompt-enforced because' or 'code-enforced because' statement",
+      "returns": "boolean"
+    }
+  },
+  "required_actions": {
+    "pre_touch_boundary_verification": {
+      "description": "Agent must verify write boundary before editing any file",
+      "observable_check": "execution_log shows write boundary confirmed for each file before edit operation",
+      "returns": "boolean"
+    },
+    "behavior_classification_with_justification": {
+      "description": "Agent must state for each behavior: 'prompt-enforced because [reason]' or 'code-enforced because [reason]'",
+      "observable_check": "execution_log contains classification statement with explicit because-reason for each behavior",
+      "returns": "boolean"
+    },
+    "recursion_bounds_in_harness_code": {
+      "description": "Agent must encode max depth, max fan-out, and termination in harness logic or code wrappers",
+      "observable_check": "execution_log shows recursion bounds defined in Python/harness code not in prose instructions",
+      "returns": "boolean"
+    }
+  },
+  "prohibited_actions": {
+    "does_not_violate_write_boundary": {
+      "description": "Agent must not modify files outside the declared write boundary",
+      "observable_check": "execution_log does not contain file edits to files outside declared write boundary",
+      "returns": "boolean"
+    },
+    "does_not_enforce_critical_in_prose_only": {
+      "description": "Agent must not enforce permissions, termination, or routing in prose alone",
+      "observable_check": "execution_log does not contain critical rules only in prose without code enforcement",
+      "returns": "boolean"
+    },
+    "does_not_grant_unjustified_tools": {
+      "description": "Agent must not grant all available tools or tools without specific justification",
+      "observable_check": "execution_log does not contain all-tools-granted or tool without because-justification",
+      "returns": "boolean"
+    }
+  }
+}

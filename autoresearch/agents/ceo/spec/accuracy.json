@@ -1,0 +1,60 @@
+{
+  "accuracy": {
+    "header": {
+      "category": "accuracy",
+      "agent": "ceo",
+      "description": "CEO accuracy measured against correct pipeline routing, correct lead selection, correct escalation, and complete result aggregation"
+    },
+    "trigger_conditions": {
+      "routing_accuracy_required": {
+        "description": "CEO must route to correct lead archetype based on request type and pipeline phase (per ceo.md Pipeline Routing table lines 381-393, Routing Patterns)",
+        "observable_from_log": "Execution log shows CEO assessed request type and selected lead archetype matching the routing pattern table",
+        "boolean_return": true
+      },
+      "scope_accuracy_required": {
+        "description": "CEO must confirm request has clear vertical slice (objective, boundaries, constraints, stop condition) before routing (per ceo.md lines 250-266, USER REQUEST EVALUATION)",
+        "observable_from_log": "Execution log shows CEO verified scope completeness before dispatch",
+        "boolean_return": true
+      },
+      "aggregation_accuracy_required": {
+        "description": "CEO must aggregate lead results completely without loss — all lead outputs included in CEO return (per ceo.md lines 128, 530, 572-575)",
+        "observable_from_log": "Execution log shows CEO included all lead results in aggregated response, no lead results omitted",
+        "boolean_return": true
+      }
+    },
+    "required_actions": {
+      "verifies_scope_clear_before_routing": {
+        "description": "CEO confirms request has clear objective, phase, and boundaries before routing to any lead (per ceo.md lines 250-266, Route Before You Run line 196-197)",
+        "observable_from_log": "Execution log shows scope verification step present before first dispatch",
+        "boolean_return": true
+      },
+      "selects_correct_lead_based_on_task_type": {
+        "description": "CEO selects correct lead: SCOPER-LEAD for scoping, SYSTEM_ARCHITECT-LEAD for architecture, BUILDER-LEAD for implementation, VERIFIER-LEAD for verification — matches task type exactly (per ceo.md lines 32-35, 381-393)",
+        "observable_from_log": "Execution log shows lead archetype matches task type in every dispatch",
+        "boolean_return": true
+      },
+      "confirms_write_boundary_before_implementation_dispatch": {
+        "description": "CEO confirms write boundary is explicitly declared before routing to builder-lead (per ceo.md DELEGATION MODEL, builder-lead dispatch contract requires Approved Architecture Brief and explicit write boundary)",
+        "observable_from_log": "Execution log shows write boundary field present in builder-lead dispatch brief",
+        "boolean_return": true
+      }
+    },
+    "prohibited_actions": {
+      "does_not_route_to_incorrect_lead": {
+        "description": "CEO does not route to incorrect lead archetype (e.g., scoping to builder, verification to scoper) (per ceo.md lines 381-393, Pipeline Routing patterns)",
+        "observable_from_log": "YES if no routing mismatches; NO if task routed to wrong lead archetype",
+        "boolean_return": true
+      },
+      "does_not_route_without_clear_scope": {
+        "description": "CEO does not route to leads when scope is unclear — returns clarification first (per ceo.md lines 250-266, Evaluating Uncertainties lines 291-309)",
+        "observable_from_log": "YES if clarification requested before routing when scope unclear; NO if routing proceeded without scope clarity",
+        "boolean_return": true
+      },
+      "does_not_lose_lead_results_in_aggregation": {
+        "description": "CEO does not omit, summarize away, or soften lead results in aggregated response (per ceo.md lines 530, 572-575, aggregation is synthesis not distortion)",
+        "observable_from_log": "YES if all lead results present and unfiltered in CEO aggregated response; NO if lead results omitted or softened",
+        "boolean_return": true
+      }
+    }
+  }
+}

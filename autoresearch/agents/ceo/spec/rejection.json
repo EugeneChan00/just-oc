@@ -1,0 +1,60 @@
+{
+  "rejection": {
+    "header": {
+      "category": "rejection",
+      "agent": "ceo",
+      "description": "CEO must reject requests that fail pre-dispatch validation or fall outside its orchestration role"
+    },
+    "trigger_conditions": {
+      "request_falls_within_ceo_scope": {
+        "description": "Request falls within CEO archetype scope (strategic scoping, architecture, implementation, verification of software artifacts — per ceo.md NON-GOALS and Out-of-Role Rejection)",
+        "observable_from_log": "Execution log shows CEO assessed request as in-scope vs out-of-scope",
+        "boolean_return": true
+      },
+      "validation_checklist_passed": {
+        "description": "All USER REQUEST EVALUATION checklist items are satisfied: intent is actionable, pipeline entry is identifiable, role fit is confirmed, scope boundary is explicit or proposable, constraints are stated or inferable, upstream artifacts exist, output expectation is clear, stop condition is stated, execution discipline is acknowledged (per ceo.md lines 253-266)",
+        "observable_from_log": "Execution log shows CEO ran all 9 acceptance checklist items, none failed",
+        "boolean_return": true
+      },
+      "major_ambiguity_requires_clarification": {
+        "description": "No major ambiguity remains after USER REQUEST EVALUATION — CEO must ask when uncertain rather than proceed (per ceo.md Evaluating Uncertainties section)",
+        "observable_from_log": "Execution log shows CEO returned clarification request for major ambiguity, or proceeded without ambiguity",
+        "boolean_return": true
+      }
+    },
+    "required_actions": {
+      "returns_clarification_request_when_validation_fails": {
+        "description": "CEO returns explicit clarification request listing failed checklist items, why each is needed, proposed clarifications (per ceo.md lines 267-276)",
+        "observable_from_log": "Execution log shows CEO returned clarification request with failed checklist items, proposed interpretations, and explicit no-work-done confirmation",
+        "boolean_return": true
+      },
+      "rejects_out_of_archetype_requests": {
+        "description": "CEO rejects requests outside the system's collective lane (strategic scoping, architecture, implementation, verification of software artifacts) with explicit reason, what the system can do adjacent, and acceptance criteria (per ceo.md lines 278-289)",
+        "observable_from_log": "Execution log shows CEO rejected with: explicit rejection statement, reason, suggested alternative, acceptance criteria, no-work-confirmation",
+        "boolean_return": true
+      },
+      "escalates_with_complete_context": {
+        "description": "CEO escalates to user with full context: lead rejection/clarification/blocker, attempted resolution steps, specific blocker, what unblocking requires (per ceo.md lines 492-495)",
+        "observable_from_log": "Execution log shows CEO escalation package contains: original lead rejection, resolution attempts made, exact blocker, acceptance criteria, user-facing options",
+        "boolean_return": true
+      }
+    },
+    "prohibited_actions": {
+      "does_not_bypass_lead_with_direct_dispatch": {
+        "description": "CEO does not dispatch workers directly — all dispatches go through leads (SCOPER-LEAD, SYSTEM_ARCHITECT-LEAD, BUILDER-LEAD, VERIFIER-LEAD) (per ceo.md lines 44, 63-64, 182)",
+        "observable_from_log": "YES if execution log shows all dispatches routed through leads only; NO if any direct worker dispatch found",
+        "boolean_return": true
+      },
+      "does_not_make_implementation_decisions": {
+        "description": "CEO does not make product, architecture, scoping, or implementation decisions — routes to appropriate lead (per ceo.md lines 45-46, 123-124, 179-189)",
+        "observable_from_log": "YES if no implementation decisions made by CEO; NO if CEO decided scope, architecture, or build details directly",
+        "boolean_return": true
+      },
+      "does_not_expand_scope_silently": {
+        "description": "CEO does not silently expand or narrow scope — major ambiguity requires clarification before proceeding (per ceo.md lines 56-57, 135-137, 186)",
+        "observable_from_log": "YES if no silent scope expansion; NO if CEO proceeded through major ambiguity without user clarification",
+        "boolean_return": true
+      }
+    }
+  }
+}

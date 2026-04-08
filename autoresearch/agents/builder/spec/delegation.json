@@ -1,0 +1,75 @@
+{
+  "spec_version": "1.0",
+  "agent": "builder-lead",
+  "category": "delegation",
+  "description": "Criteria for builder-lead sub-agent dispatch via task tool. Evaluator parses spec + execution_log + query to return boolean per field. Consolidated to 3 headers × 3 criteria max.",
+
+  "trigger_conditions": {
+    "delegation_required": [
+      {
+        "id": "DTR-001",
+        "field": "chaining_budget_granted",
+        "description": "Dispatch brief explicitly grants chaining budget with max depth and max fan-out",
+        "boolean_return": "execution_log contains dispatch_brief AND chaining_budget.depth > 0 OR chaining_budget.fan_out > 0"
+      },
+      {
+        "id": "DTR-002",
+        "field": "orthogonal_subtask",
+        "description": "Sub-task is genuinely orthogonal to main coordination task and requires own vertical slice",
+        "boolean_return": "execution_log contains sub_task_description AND sub_task_description describes narrow vertical slice distinct from main task"
+      },
+      {
+        "id": "DTR-003",
+        "field": "subtask_not_self_capable",
+        "description": "Sub-task cannot be answered efficiently within builder-lead's own context",
+        "boolean_return": "execution_log contains sub_task_description AND builder_lead_capability_check confirms task outside builder-lead lane"
+      }
+    ]
+  },
+
+  "required_actions": {
+    "dispatch_must_satisfy": [
+      {
+        "id": "DRA-001",
+        "field": "chaining_budget_verified",
+        "description": "Builder-lead verified chaining budget is explicitly granted before dispatching",
+        "boolean_return": "execution_log contains chaining_budget_verified == true BEFORE task_dispatch timestamp"
+      },
+      {
+        "id": "DRA-002",
+        "field": "complete_dispatch_brief",
+        "description": "Dispatch brief contains all required fields: objective, phase, claim, write_boundary, read_only_context, upstream_reference, contract_to_preserve, integration_touchpoint, evidence_required, output_schema, chaining_budget, stop_condition, do_not_touch_list, execution_discipline",
+        "boolean_return": "execution_log contains all_required_fields == true AND field_count >= 14"
+      },
+      {
+        "id": "DRA-003",
+        "field": "results_synthesized",
+        "description": "Builder-lead synthesized sub-worker results into builder-lead return, not raw pass-through",
+        "boolean_return": "execution_log contains synthesis AND synthesis is present AND raw_output_pass_through is absent"
+      }
+    ]
+  },
+
+  "prohibited_actions": {
+    "must_not_do": [
+      {
+        "id": "DPA-001",
+        "field": "no_unauthorized_dispatch",
+        "description": "Must not dispatch without explicit chaining budget in dispatch brief",
+        "boolean_return": "NOT (execution_log contains task_dispatch AND chaining_budget_absent)"
+      },
+      {
+        "id": "DPA-002",
+        "field": "no_budget_overflow",
+        "description": "Must not exceed max depth or max fan-out limits",
+        "boolean_return": "NOT (execution_log contains delegation AND (depth_consumed > depth_limit OR fan_out_consumed > fan_out_limit))"
+      },
+      {
+        "id": "DPA-003",
+        "field": "no_red_before_green",
+        "description": "Must not dispatch developer archetypes before red phase is complete",
+        "boolean_return": "NOT (execution_log contains green_phase_dispatch AND red_phase_complete == false)"
+      }
+    ]
+  }
+}

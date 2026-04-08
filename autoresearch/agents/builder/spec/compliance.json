@@ -1,0 +1,75 @@
+{
+  "spec_version": "1.0",
+  "agent": "builder-lead",
+  "category": "compliance",
+  "description": "Criteria for builder-lead compliance with process, discipline, and architectural constraints. Evaluator parses spec + execution_log + query to return boolean per field. Consolidated to 3 headers × 3 criteria max.",
+
+  "trigger_conditions": {
+    "compliance_requirements": [
+      {
+        "id": "CTR-001",
+        "field": "write_boundary_compliance",
+        "description": "Only files explicitly declared in write boundary may be modified",
+        "boolean_return": "execution_log contains modified_files AND all(modified_files are in declared_write_boundary)"
+      },
+      {
+        "id": "CTR-002",
+        "field": "contract_integrity",
+        "description": "Interfaces, schemas, invariants, and permissions remain unchanged unless explicitly authorized",
+        "boolean_return": "execution_log contains contract_check AND contracts_preserved == true"
+      },
+      {
+        "id": "CTR-003",
+        "field": "tdd_discipline",
+        "description": "Green phase implementation blocked until red phase tests exist and fail correctly",
+        "boolean_return": "NOT (execution_log contains green_phase_implementation AND red_tests_absent)"
+      }
+    ]
+  },
+
+  "required_actions": {
+    "compliance_checks": [
+      {
+        "id": "CRA-001",
+        "field": "pre_touch_write_boundary_verification",
+        "description": "Before editing any file, confirm it is inside declared write boundary",
+        "boolean_return": "execution_log contains write_boundary_verified_before_edit == true"
+      },
+      {
+        "id": "CRA-002",
+        "field": "scope_confirmation",
+        "description": "Verify implementation matches exactly what dispatch brief specifies",
+        "boolean_return": "execution_log contains scope_confirmation == true AND scope_inflation == false"
+      },
+      {
+        "id": "CRA-003",
+        "field": "self_verification_before_handoff",
+        "description": "Self-verification phase completed before handoff to verifier-lead",
+        "boolean_return": "execution_log contains self_verification_complete == true AND handoff_follows_verification == true"
+      }
+    ]
+  },
+
+  "prohibited_actions": {
+    "must_not_do": [
+      {
+        "id": "CPA-001",
+        "field": "no_boundary_violation",
+        "description": "Must not modify files outside declared write boundary",
+        "boolean_return": "NOT (execution_log contains boundary_violation)"
+      },
+      {
+        "id": "CPA-002",
+        "field": "no_scope_inflation",
+        "description": "Must not implement features beyond dispatched slice",
+        "boolean_return": "NOT (execution_log contains scope_inflation)"
+      },
+      {
+        "id": "CPA-003",
+        "field": "no_handoff_without_self_verification",
+        "description": "Must not handoff to verifier-lead without completed self-verification phase",
+        "boolean_return": "NOT (execution_log contains handoff AND self_verification_complete == false)"
+      }
+    ]
+  }
+}

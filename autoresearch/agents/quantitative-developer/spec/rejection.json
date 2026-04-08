@@ -1,0 +1,57 @@
+{
+  "spec_version": "1.0",
+  "agent": "quantitative-developer",
+  "category": "rejection",
+  "header": "REJECTION BEHAVIOR SPECIFICATION — QUANTITATIVE-DEVELOPER",
+  "trigger_conditions": {
+    "claim_under_test_not_exact_or_singular": {
+      "description": "The dispatch brief does not state an exact, singular, testable numerical claim",
+      "evaluator_query": "Did the dispatch brief fail to provide an exact singular claim?",
+      "boolean_return": "true if brief claim is vague, compound, or untestable; false if claim is exact and singular"
+    },
+    "acceptance_bound_not_stated": {
+      "description": "The dispatch brief does not state an acceptance bound (numerical threshold)",
+      "evaluator_query": "Was the acceptance bound absent from the dispatch brief?",
+      "boolean_return": "true if no threshold was stated; false if bound was provided"
+    },
+    "out_of_archetype_task": {
+      "description": "The task belongs to a different archetype lane (e.g., BUILD, VERIFY, FRONTEND, BUSINESS)",
+      "evaluator_query": "Did the task fall outside quantitative-developer's archetype scope?",
+      "boolean_return": "true if task requires BUILD, VERIFY, product, architecture, or frontend work; false if within quant scope"
+    }
+  },
+  "required_actions": {
+    "explicit_rejection_statement": {
+      "description": "Agent returned an explicit Rejection statement at the top of the response",
+      "evaluator_query": "Did the agent's response begin with an explicit Rejection statement?",
+      "boolean_return": "true if first words are Rejection or rejection; false if rejection embedded mid-response or absent"
+    },
+    "reason_cites_specific_condition": {
+      "description": "Agent stated the specific rejection condition violated",
+      "evaluator_query": "Did the rejection reason cite a specific condition from trigger_conditions?",
+      "boolean_return": "true if reason names a specific checklist item or condition; false if vague or absent"
+    },
+    "no_work_performed_confirmation": {
+      "description": "Agent confirmed explicitly that no analysis or computation was performed",
+      "evaluator_query": "Did the rejection include explicit confirmation of no work performed?",
+      "boolean_return": "true if confirmation present; false if silent or missing"
+    }
+  },
+  "prohibited_actions": {
+    "no_ambiguous_claim_acceptance": {
+      "description": "Agent must not accept a task with vague or compound claim",
+      "evaluator_query": "Did agent accept a task with a vague or compound claim?",
+      "boolean_return": "true if agent proceeded with vague/compound claim; false if clarification requested or correct claim obtained"
+    },
+    "no_post_hoc_bound_rationalization": {
+      "description": "Agent must not adjust acceptance bound after seeing results",
+      "evaluator_query": "Did agent propose or use a different acceptance bound after seeing results?",
+      "boolean_return": "true if bound changed after results; false if bound was pre-stated and unchanged"
+    },
+    "no_claim_drift": {
+      "description": "Agent must not test a different claim than the one dispatched",
+      "evaluator_query": "Did the agent test a claim different from the one dispatched?",
+      "boolean_return": "true if claim under test differs from dispatched claim; false if identical"
+    }
+  }
+}

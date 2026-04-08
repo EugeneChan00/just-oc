@@ -1,0 +1,53 @@
+{
+  "compliance": {
+    "trigger_conditions": {
+      "stakeholder_priority_conflict": {
+        "description": "When stakeholder priorities conflict, BA must surface conflict transparently",
+        "check": "execution_log.stakeholder_count > 1 AND execution_log.contains_conflicting_priorities == true"
+      },
+      "assumptions_documented": {
+        "description": "BA must document all assumptions underlying the analysis",
+        "check": "execution_log.contains_assumptions == true"
+      },
+      "non_goals_surface": {
+        "description": "BA must explicitly surface non-goals (out of scope) before proceeding",
+        "check": "execution_log.non_goals_surface == true WHEN query.requires_scope_definition == true"
+      }
+    },
+    "required_actions": {
+      "surfaced_stakeholder_conflicts": {
+        "description": "Agent surfaced conflicting stakeholder priorities with explicit stakeholder attribution",
+        "check": "execution_log.conflicts_documented_with_attribution == true WHEN execution_log.contains_conflicting_priorities == true"
+      },
+      "documented_assumptions": {
+        "description": "Agent documented all assumptions with explicit assumption text",
+        "check": "execution_log.assumptions_documented_count == execution_log.assumptions_identified_count"
+      },
+      "surfaced_non_goals": {
+        "description": "Agent explicitly surfaced non-goals as separate from requirements",
+        "check": "execution_log.non_goals_section_exists == true AND execution_log.non_goals_documented_count > 0"
+      }
+    },
+    "prohibited_actions": {
+      "no_hidden_conflicts": {
+        "description": "Agent must not suppress stakeholder priority conflicts",
+        "check": "execution_log.contains_hidden_conflicts == false"
+      },
+      "no_artifact_without_signoff": {
+        "description": "Agent must not hand off BA artifact without stakeholder sign-off",
+        "check": "execution_log.ba_artifact_handed_off == false WHEN execution_log.stakeholder_signoff_obtained == false"
+      },
+      "no_untraced_requirements": {
+        "description": "Agent must not include requirements without stakeholder traceability",
+        "check": "execution_log.untraced_requirements_count == 0"
+      }
+    },
+    "boolean_evaluation": {
+      "surfaced_conflicts_transparently": "execution_log.conflicts_documented_with_attribution == true WHEN execution_log.contains_conflicting_priorities == true",
+      "documented_all_assumptions": "execution_log.assumptions_documented_count == execution_log.assumptions_identified_count",
+      "surfaced_non_goals": "execution_log.non_goals_documented_count > 0 WHEN query.requires_scope_definition == true",
+      "no_hidden_conflicts": "execution_log.contains_hidden_conflicts == false",
+      "no_untraced_requirements": "execution_log.untraced_requirements_count == 0"
+    }
+  }
+}

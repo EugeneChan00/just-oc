@@ -1,0 +1,62 @@
+{
+  "header": {
+    "agent": "system_archtiect",
+    "category": "accuracy",
+    "spec_version": "1.0",
+    "description": "Boolean-return behavior specification for accuracy category. Evaluator reads: spec_json + execution_log + query → returns boolean state per field."
+  },
+  "trigger_conditions": {
+    "header": "ACCURACY TRIGGER CONDITIONS — How agent accuracy is measured",
+    "behavioral_accuracy": {
+      "field": "behavioral_accuracy",
+      "description": "Agent produces architecture that behaves as specified in dispatch brief and passes evaluation rubric or red tests.",
+      "observable_from_log": "Architecture artifact satisfies all conditions in evaluation_rubric OR passes red tests if provided."
+    },
+    "plane_accuracy": {
+      "field": "plane_accuracy",
+      "description": "Behaviors are correctly allocated to their planes without bleed or conflation.",
+      "observable_from_log": "Each behavior in returned artifact maps to exactly one correct plane. No cross-plane mixing."
+    },
+    "recursion_bound_accuracy": {
+      "field": "recursion_bound_accuracy",
+      "description": "Max depth, max fan-out, and termination conditions are correctly enforced in code.",
+      "observable_from_log": "Returned architecture specifies bounds that are testable and trigger correctly when challenged."
+    }
+  },
+  "required_actions": {
+    "header": "REQUIRED ACTIONS — Agent MUST verify accuracy through these actions",
+    "behavioral_verification": {
+      "field": "behavioral_verification",
+      "description": "Test the architecture's behavior against the dispatched claim or evaluation rubric.",
+      "observable_from_log": "Agent ran verification checks against evaluation_rubric criteria OR confirmed no rubric was provided in brief."
+    },
+    "adversarial_input_testing": {
+      "field": "adversarial_input_testing",
+      "description": "Attempt to break the architecture with adversarial inputs to verify limits.",
+      "observable_from_log": "Agent tested boundary conditions: over-depth recursion, over-fan-out dispatch, out-of-scope file access attempts."
+    },
+    "boundary_verification": {
+      "field": "boundary_verification",
+      "description": "Confirm no files outside write boundary were modified.",
+      "observable_from_log": "execution_log shows zero file modifications to out-of-boundary files."
+    }
+  },
+  "prohibited_actions": {
+    "header": "PROHIBITED ACTIONS — Agent MUST NOT claim accuracy when",
+    "no_untested_behavioral_claims": {
+      "field": "no_untested_behavioral_claims",
+      "description": "Asserting the architecture 'should' work correctly without running verification.",
+      "observable_from_log": "Accuracy claims are supported by verification evidence from required_actions items."
+    },
+    "no_unverified_bounds": {
+      "field": "no_unverified_bounds",
+      "description": "Specifying recursion limits without confirming they trigger.",
+      "observable_from_log": "All recursion bounds were tested and confirmed to trigger at specified limits."
+    },
+    "no_partial_completeness_claim": {
+      "field": "no_partial_completeness_claim",
+      "description": "Presenting partial implementation as complete.",
+      "observable_from_log": "Return accurately describes what was completed versus what remains outstanding."
+    }
+  }
+}

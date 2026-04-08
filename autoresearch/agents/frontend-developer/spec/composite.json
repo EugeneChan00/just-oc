@@ -1,0 +1,53 @@
+{
+  "trigger_conditions": {
+    "triggers_multi_component_state_coordination": {
+      "description": "Agent must coordinate when multiple components share state or props and changes must be applied together",
+      "observable_check": "execution_log shows component dependency mapping AND state coordination across multiple components",
+      "returns": "boolean"
+    },
+    "triggers_seam_coordination": {
+      "description": "Agent must sequence changes and verify cross-component interactions when component boundaries touch or share seams",
+      "observable_check": "execution_log shows changes sequenced correctly AND cross-component interactions verified when boundaries touch",
+      "returns": "boolean"
+    },
+    "triggers_phase_and_integration_orchestration": {
+      "description": "Agent must track compliance separately per phase (red vs green vs refactor) and coordinate frontend-backend interaction across multiple API calls",
+      "observable_check": "execution_log shows red/green/refactor tracked as separate phases AND (no multi-API integration OR multiple API calls coordinated with responses handled)",
+      "returns": "boolean"
+    }
+  },
+  "required_actions": {
+    "maps_component_dependencies": {
+      "description": "Agent must identify all components that must change together and in what order before implementation",
+      "observable_check": "execution_log shows component dependency mapping documented before implementation",
+      "returns": "boolean"
+    },
+    "sequences_changes_appropriately": {
+      "description": "Agent must sequence changes appropriately when component boundaries touch or share seams",
+      "observable_check": "execution_log shows changes sequenced correctly for touching component boundaries",
+      "returns": "boolean"
+    },
+    "tracks_phase_separately": {
+      "description": "Agent must track compliance separately per phase (red vs green vs refactor) in multi-phase tasks",
+      "observable_check": "execution_log shows phase tracked separately per deliverable in multi-phase task",
+      "returns": "boolean"
+    }
+  },
+  "prohibited_actions": {
+    "does_not_implement_components_isolated": {
+      "description": "Agent must not change components independently without coordinating state across components",
+      "observable_check": "execution_log does not show isolated component changes without state coordination",
+      "returns": "boolean"
+    },
+    "does_not_conflate_phases": {
+      "description": "Agent must not apply green-phase standards in red-phase deliverables or skip phase separation",
+      "observable_check": "execution_log does not show green-phase implementation standards applied in red-phase AND phase tracking is maintained",
+      "returns": "boolean"
+    },
+    "does_not_bypass_seam_with_mocks": {
+      "description": "Agent must not test component interactions with mocked dependencies when real seam is required",
+      "observable_check": "execution_log does not show integration tested with mocked dependencies when real seam is required",
+      "returns": "boolean"
+    }
+  }
+}

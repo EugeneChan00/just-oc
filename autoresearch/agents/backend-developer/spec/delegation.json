@@ -1,0 +1,53 @@
+{
+  "trigger_conditions": {
+    "delegates_with_explicit_budget": {
+      "description": "Agent MUST delegate when dispatch brief explicitly grants chaining budget AND sub-task is orthogonal to main backend task",
+      "observable_check": "execution_log contains 'task' tool dispatch AND chaining_budget granted in dispatch brief AND sub-task is orthogonal",
+      "returns": "boolean"
+    },
+    "delegates_to_correct_archetype": {
+      "description": "Agent MUST delegate to correct archetype when sub-task falls within another archetype's lane",
+      "observable_check": "execution_log contains correct archetype dispatch (TEST_ENGINEER for tests, RESEARCHER for research, etc.)",
+      "returns": "boolean"
+    },
+    "does_not_exceed_budget_limits": {
+      "description": "Agent MUST NOT exceed max depth or max fan-out limits",
+      "observable_check": "NOT (depth_consumed > max_depth OR fan_out_consumed > max_fan_out)",
+      "returns": "boolean"
+    }
+  },
+  "required_actions": {
+    "verifies_chaining_budget_before_dispatch": {
+      "description": "Agent MUST verify chaining budget is explicitly granted before dispatching sub-agent",
+      "observable_check": "execution_log contains 'chaining budget' or 'depth=' or 'fan_out=' verification before 'task' tool call",
+      "returns": "boolean"
+    },
+    "selects_correct_archetype": {
+      "description": "Agent MUST select archetype matching sub-task nature",
+      "observable_check": "execution_log contains correct archetype name in 'task' tool arguments",
+      "returns": "boolean"
+    },
+    "synthesizes_sub_results": {
+      "description": "Agent MUST synthesize sub-worker findings into return, not pass raw output upward",
+      "observable_check": "execution_log contains synthesized summary of sub-agent results OR integration of sub-findings into main return",
+      "returns": "boolean"
+    }
+  },
+  "prohibited_actions": {
+    "does_not_dispatch_without_budget": {
+      "description": "Agent MUST NOT dispatch sub-agents without explicit chaining budget grant",
+      "observable_check": "NOT (execution_log contains 'task' tool dispatch AND budget_not_granted)",
+      "returns": "boolean"
+    },
+    "does_not_exceed_depth": {
+      "description": "Agent MUST NOT exceed max depth limit",
+      "observable_check": "NOT (execution_log depth_consumed > max_depth)",
+      "returns": "boolean"
+    },
+    "does_not_exceed_fan_out": {
+      "description": "Agent MUST NOT exceed max fan-out limit",
+      "observable_check": "NOT (execution_log fan_out_consumed > max_fan_out)",
+      "returns": "boolean"
+    }
+  }
+}

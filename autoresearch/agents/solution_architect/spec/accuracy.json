@@ -1,0 +1,78 @@
+{
+  "spec_version": "1.0",
+  "agent": "solutions-architect",
+  "category": "accuracy",
+  "header": {
+    "objective": "Define accuracy requirements for solutions-architect architectural analysis output",
+    "evaluator_input": "spec_json + execution_log + query → boolean state per field"
+  },
+  "trigger_conditions": {
+    "description": "Lens and option integrity must be accurate",
+    "criteria": [
+      {
+        "name": "lens_accuracy",
+        "condition": "Output explicitly names which lens was applied and states what it revealed; lens findings are not skipped or shortcut (SYSTEM_PROMPT lines 200, 219-229)",
+        "evaluator_query": "Did the execution log show the applied lens was explicitly named and its findings stated?",
+        "boolean_return": true
+      },
+      {
+        "name": "option_distinctness_accuracy",
+        "condition": "Each option has a distinct core architectural move not just different framing; no option duplicated with cosmetic differences; genuine equivalence explicitly reported not fabricated (SYSTEM_PROMPT lines 215, 363-365)",
+        "evaluator_query": "Did the execution log show options were genuinely distinct and equivalence honestly reported?",
+        "boolean_return": true
+      },
+      {
+        "name": "drag_gain_accuracy",
+        "condition": "Every structural change classified as compounding gain or structural drag with explicit mechanism stated; no 'could go either way' vague judgments (SYSTEM_PROMPT lines 67-72, 208-209)",
+        "evaluator_query": "Did the execution log show every change had explicit drag/gain classification with mechanism?",
+        "boolean_return": true
+      }
+    ]
+  },
+  "required_actions": {
+    "description": "Operational and evidence accuracy must be verifiable",
+    "criteria": [
+      {
+        "name": "operational_accuracy",
+        "condition": "Stated failure modes are real; observability gaps are real not fabricated; rollback paths are viable; operator burden accurately assessed; non-viable options correctly flagged (SYSTEM_PROMPT lines 212, 107-111)",
+        "evaluator_query": "Did the execution log show operational assessments were accurate and real?",
+        "boolean_return": true
+      },
+      {
+        "name": "evidence_accuracy",
+        "condition": "Claims supported by stated evidence not inference elevated to fact; contradictory evidence surfaced not suppressed; 'no information' distinguished from 'conflicting information' (SYSTEM_PROMPT lines 360-361)",
+        "evaluator_query": "Did the execution log show evidence matched claims and contradictions were surfaced?",
+        "boolean_return": true
+      },
+      {
+        "name": "self_validation_performed",
+        "condition": "Self-validation confirmed lens discipline, option distinctness, drag/gain explicitness, operational realism, and schema conformance before return (SYSTEM_PROMPT lines 108, 242-243)",
+        "evaluator_query": "Did the execution log show self-validation checked all required dimensions?",
+        "boolean_return": true
+      }
+    ]
+  },
+  "prohibited_actions": {
+    "description": "Output must not contain inaccurate or inflated claims",
+    "criteria": [
+      {
+        "name": "no_vague_tradeoff_judgments",
+        "condition": "Tradeoffs not stated as 'could go either way' without mechanism; strengths/weaknesses/risks/best-fit context actually apply to the option as described (SYSTEM_PROMPT line 209)",
+        "evaluator_query": "Did the execution log show tradeoffs were specific and accurate, not vague?",
+        "boolean_return": true
+      },
+      {
+        "name": "no_comparison_table_inconsistency",
+        "condition": "Comparison table values accurately reflect the options; table comparisons consistent with detailed option descriptions (SYSTEM_PROMPT line 383)",
+        "evaluator_query": "Did the execution log show comparison tables were consistent with option descriptions?",
+        "boolean_return": true
+      }
+    ]
+  },
+  "evaluator_summary": {
+    "total_trigger_checks": 3,
+    "total_required_action_checks": 3,
+    "total_prohibited_action_checks": 2,
+    "pass_threshold": "all checks must return true for spec compliance"
+  }
+}

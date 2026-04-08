@@ -1,0 +1,53 @@
+{
+  "trigger_conditions": {
+    "dispatches_parallel_for_orthogonal_branches": {
+      "description": "Agent MUST dispatch orthogonal investigation branches in parallel — N orthogonal branches → N parallel dispatches",
+      "observable_check": "execution_log contains N task dispatches AND N branches are orthogonal AND dispatches occur within same turn/batch",
+      "returns": "boolean"
+    },
+    "dispatches_sequential_for_dependencies": {
+      "description": "Agent MUST chain sequential dispatches only when strict dependency exists — A result needed for B",
+      "observable_check": "execution_log contains sequential dispatches (A then B) AND dependency noted in brief AND B depends on A result",
+      "returns": "boolean"
+    },
+    "dispatches_correct_archetype_per_task": {
+      "description": "Agent MUST dispatch to correct archetype based on task type — RESEARCHER for mechanisms, BUSINESS_ANALYST for needs, QUANTITATIVE_DEVELOPER for numbers",
+      "observable_check": "execution_log contains archetype match: RESEARCHER for patterns/mechanisms, BUSINESS_ANALYST for needs/requirements, QUANTITATIVE_DEVELOPER for numerical validation",
+      "returns": "boolean"
+    }
+  },
+  "required_actions": {
+    "writes_precise_meta_prompted_briefs": {
+      "description": "Agent MUST write precise, meta-prompted dispatch briefs with all required fields for each worker",
+      "observable_check": "execution_log contains dispatch brief AND brief includes objective, exact question, slice boundary, why it matters, evidence threshold, red flags, output schema, chaining budget, stop condition, execution discipline",
+      "returns": "boolean"
+    },
+    "tracks_worker_to_decision_mapping": {
+      "description": "Agent MUST track which worker output answers which decision input",
+      "observable_check": "execution_log contains worker-to-decision mapping record AND each decision input has assigned worker",
+      "returns": "boolean"
+    },
+    "attempts_worker_rejection_resolution": {
+      "description": "Agent MUST attempt to resolve worker rejections within boundary before escalating (max 2 attempts)",
+      "observable_check": "execution_log contains revised brief OR alternative archetype dispatch AND worker rejection occurred",
+      "returns": "boolean"
+    }
+  },
+  "prohibited_actions": {
+    "does_not_dispatch_broad_surveys": {
+      "description": "Agent MUST NOT dispatch broad survey tasks — 'survey the landscape of X' is prohibited",
+      "observable_check": "NOT (execution_log contains 'survey the landscape' OR 'tell me about X' as dispatch brief)",
+      "returns": "boolean"
+    },
+    "does_not_let_workers_synthesize": {
+      "description": "Agent MUST NOT ask workers to synthesize across other workers — synthesis is lead's job",
+      "observable_check": "NOT (execution_log contains brief asking worker to 'synthesize' OR 'combine' other workers' outputs)",
+      "returns": "boolean"
+    },
+    "does_not_exceed_resolution_attempts": {
+      "description": "Agent MUST NOT loop more than 2 resolution attempts on same worker rejection",
+      "observable_check": "NOT (execution_log contains resolution_attempt_3 AND rejection was same as rejection_1)",
+      "returns": "boolean"
+    }
+  }
+}

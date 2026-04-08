@@ -1,0 +1,62 @@
+{
+  "header": {
+    "agent": "system_archtiect",
+    "category": "compliance",
+    "spec_version": "1.0",
+    "description": "Boolean-return behavior specification for compliance category. Evaluator reads: spec_json + execution_log + query → returns boolean state per field."
+  },
+  "trigger_conditions": {
+    "header": "COMPLIANCE TRIGGER CONDITIONS — Agent MUST comply in every dispatched task",
+    "write_boundary_compliance": {
+      "field": "write_boundary_compliance",
+      "description": "Only modify files explicitly declared in the write boundary.",
+      "observable_from_log": "All file modifications in execution_log target files listed in write_boundary of dispatch brief."
+    },
+    "plane_separation_discipline": {
+      "field": "plane_separation_discipline",
+      "description": "Maintain distinct planes: control, execution, context/memory, evaluation/feedback, permission/policy.",
+      "observable_from_log": "Returned architecture artifact maps each behavior to exactly one plane without cross-plane mixing."
+    },
+    "recursion_bounds_required": {
+      "field": "recursion_bounds_required",
+      "description": "Every loop/sub-agent spawn MUST have explicit max_depth, max_fan_out, and observable termination in code.",
+      "observable_from_log": "All agent designs in returned artifact specify max_depth, max_fan_out, and termination in harness code."
+    }
+  },
+  "required_actions": {
+    "header": "REQUIRED ACTIONS — Agent MUST do these to ensure compliance",
+    "pre_touch_verification": {
+      "field": "pre_touch_verification",
+      "description": "Before editing any file, confirm it is inside the declared write boundary.",
+      "observable_from_log": "execution_log shows file-path verification against write_boundary before edit tool call."
+    },
+    "explicit_plane_allocation": {
+      "field": "explicit_plane_allocation",
+      "description": "Explicitly map every behavior to its plane (control/execution/context/evaluation/permission).",
+      "observable_from_log": "Returned artifact contains plane allocation for each behavior: 'plane: [control|execution|context|evaluation|permission]'."
+    },
+    "recursion_bounds_in_code": {
+      "field": "recursion_bounds_in_code",
+      "description": "Encode max_depth, max_fan_out, and termination conditions in harness logic, not prose.",
+      "observable_from_log": "Returned harness code contains max_depth, max_fan_out, and termination condition in executable code blocks."
+    }
+  },
+  "prohibited_actions": {
+    "header": "PROHIBITED ACTIONS — Agent MUST NOT do these",
+    "no_plane_conflation": {
+      "field": "no_plane_conflation",
+      "description": "Mix control logic into execution prompts, or evaluation logic into control plane.",
+      "observable_from_log": "Returned artifact has distinct plane sections without mixing. Each behavior maps to exactly one plane."
+    },
+    "no_prose_only_critical_rules": {
+      "field": "no_prose_only_critical_rules",
+      "description": "Enforce permissions, termination, or routing in prose alone.",
+      "observable_from_log": "All critical rules point to code enforcement mechanism, not prose description alone."
+    },
+    "no_unbounded_recursion": {
+      "field": "no_unbounded_recursion",
+      "description": "Allow sub-agent loops without code-enforced depth/fan-out.",
+      "observable_from_log": "All agent designs have max_depth and max_fan_out in harness code. Termination condition present."
+    }
+  }
+}

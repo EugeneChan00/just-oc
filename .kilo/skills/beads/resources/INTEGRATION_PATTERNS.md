@@ -1,0 +1,1 @@
+/home/zz/.agent/skills/beads/resources/INTEGRATION_PATTERNS.md

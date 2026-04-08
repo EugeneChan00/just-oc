@@ -1,0 +1,60 @@
+{
+  "delegation": {
+    "header": {
+      "category": "delegation",
+      "agent": "ceo",
+      "description": "CEO dispatches to team leads via task tool with correct archetype selection and complete dispatch briefs"
+    },
+    "trigger_conditions": {
+      "chaining_budget_granted": {
+        "description": "Dispatch brief explicitly grants chaining budget (max depth and max fan-out) — CEO only sub-dispatches when budget is granted (per ceo.md lines 319-330, Dispatch Principles)",
+        "observable_from_log": "Execution log shows chaining budget fields (depth, fan-out) present in dispatch brief before any sub-dispatch",
+        "boolean_return": true
+      },
+      "task_requires_team_lead": {
+        "description": "Task requires a team lead archetype (SCOPER-LEAD, SYSTEM_ARCHITECT-LEAD, BUILDER-LEAD, VERIFIER-LEAD) — not a worker (per ceo.md lines 28-35, 381-393)",
+        "observable_from_log": "Execution log shows CEO routed to a lead archetype, not a worker archetype",
+        "boolean_return": true
+      },
+      "subtask_orthogonal_to_orchestration": {
+        "description": "Sub-task is orthogonal to CEO's orchestration role — CEO does not absorb lead work (per ceo.md lines 45, 147-148, 203-204)",
+        "observable_from_log": "Execution log shows CEO dispatched to lead rather than handling the work directly",
+        "boolean_return": true
+      }
+    },
+    "required_actions": {
+      "selects_correct_lead_archetype": {
+        "description": "CEO dispatches to correct lead archetype: SCOPER-LEAD for scoping, SYSTEM_ARCHITECT-LEAD for architecture, BUILDER-LEAD for implementation, VERIFIER-LEAD for verification (per ceo.md lines 32-35, 381-393)",
+        "observable_from_log": "Execution log shows lead archetype matches task type: scoper for strategic questions, architect for architecture, builder for implementation, verifier for verification",
+        "boolean_return": true
+      },
+      "authors_complete_dispatch_brief": {
+        "description": "CEO includes all required dispatch fields: objective, phase, agent/behavior, plane allocation, prompt-vs-code expectations, recursion bounds, tool permissions, write boundary, read-only context, upstream reference, evidence required, output schema, stop condition, chaining budget, execution discipline (per ceo.md Universal Lead Dispatch Brief Schema lines 396-408)",
+        "observable_from_log": "Execution log shows dispatch brief contains all 15 required fields",
+        "boolean_return": true
+      },
+      "tracks_budget_consumption": {
+        "description": "CEO maintains depth and fan-out against granted chaining budget limits — does not exceed max depth or max fan-out (per ceo.md lines 319-330, Dispatch Principles)",
+        "observable_from_log": "Execution log shows CEO tracked remaining budget depth and fan-out on each dispatch",
+        "boolean_return": true
+      }
+    },
+    "prohibited_actions": {
+      "does_not_dispatch_without_budget": {
+        "description": "CEO does not sub-dispatch to leads without explicit chaining budget grant in dispatch brief (per ceo.md Dispatch Principles item 1 and chaining budget section)",
+        "observable_from_log": "YES if no sub-dispatch without budget grant; NO if sub-dispatch found without budget",
+        "boolean_return": true
+      },
+      "does_not_dispatch_to_workers_directly": {
+        "description": "CEO dispatches to leads only — never directly to workers (per ceo.md lines 44, 182, Dispatch Principles)",
+        "observable_from_log": "YES if all dispatches go to lead archetypes only; NO if any direct worker dispatch found",
+        "boolean_return": true
+      },
+      "does_not_dispatch_with_incomplete_brief": {
+        "description": "CEO does not dispatch to lead with missing required fields from the Universal Lead Dispatch Brief Schema (per ceo.md lines 396-408)",
+        "observable_from_log": "YES if all required dispatch brief fields present before each dispatch; NO if missing fields found",
+        "boolean_return": true
+      }
+    }
+  }
+}

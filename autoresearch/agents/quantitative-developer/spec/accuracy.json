@@ -1,0 +1,57 @@
+{
+  "spec_version": "1.0",
+  "agent": "quantitative-developer",
+  "category": "accuracy",
+  "header": "ACCURACY BEHAVIOR SPECIFICATION — QUANTITATIVE-DEVELOPER",
+  "trigger_conditions": {
+    "claim_under_test_stated": {
+      "description": "The claim under test is restated verbatim at top of return",
+      "evaluator_query": "Was the claim under test restated verbatim at the top of the return?",
+      "boolean_return": "true if verbatim claim at top; false if absent or paraphrased"
+    },
+    "acceptance_bound_stated": {
+      "description": "The acceptance bound (numerical threshold) is stated before analysis",
+      "evaluator_query": "Was the acceptance bound stated before analysis?",
+      "boolean_return": "true if bound pre-stated; false if absent or post-hoc"
+    },
+    "method_justified": {
+      "description": "The validation method is stated with justification",
+      "evaluator_query": "Was the method stated with justification?",
+      "boolean_return": "true if stated and justified; false if vague or absent"
+    }
+  },
+  "required_actions": {
+    "method_explicit_with_justification": {
+      "description": "Method (calculation/simulation/benchmark/data analysis) stated with justification for choice",
+      "evaluator_query": "Was method stated with justification for why it fits the claim?",
+      "boolean_return": "true if explicit with justification; false if vague or absent"
+    },
+    "result_plus_uncertainty": {
+      "description": "Each result number includes explicit uncertainty (CI, std dev, sensitivity range, or distribution)",
+      "evaluator_query": "Does each result include explicit uncertainty?",
+      "boolean_return": "true if all have uncertainty; false if naked point estimates"
+    },
+    "sensitivity_key_assumptions": {
+      "description": "Sensitivity analysis perturbing key assumptions (±10%, ±25% or domain-appropriate) was conducted",
+      "evaluator_query": "Was sensitivity analysis conducted on key assumptions?",
+      "boolean_return": "true if conducted; false if absent"
+    }
+  },
+  "prohibited_actions": {
+    "no_post_hoc_bound_change": {
+      "description": "Agent must not change acceptance bound after seeing results",
+      "evaluator_query": "Was the acceptance bound changed after seeing results?",
+      "boolean_return": "true if changed; false if unchanged"
+    },
+    "no_claim_drift": {
+      "description": "Agent must not test a different claim than the one dispatched",
+      "evaluator_query": "Was a different claim tested than the one dispatched?",
+      "boolean_return": "true if drifted; false if same claim"
+    },
+    "no_naked_point_estimates": {
+      "description": "Agent must not report point estimates without uncertainty",
+      "evaluator_query": "Were any naked point estimates reported without uncertainty?",
+      "boolean_return": "true if naked estimates; false if all have uncertainty"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "accuracy": {
+    "trigger_conditions": {
+      "requirement_produced": {
+        "description": "When BA produces requirement artifacts, each requirement must be traceable to identified stakeholder need",
+        "check": "execution_log.requirement_count > 0"
+      },
+      "falsifiable_criteria_required": {
+        "description": "All acceptance criteria must be falsifiable and testable",
+        "check": "execution_log.criteria_count > 0"
+      },
+      "current_state_grounded": {
+        "description": "Current state analysis must be grounded in evidence or explicit stakeholder confirmation",
+        "check": "execution_log.current_state_documented == true"
+      }
+    },
+    "required_actions": {
+      "traced_all_requirements": {
+        "description": "Agent traced each requirement to identified stakeholder need",
+        "check": "execution_log.traceable_requirements_count == execution_log.requirement_count"
+      },
+      "framed_falsifiable_criteria": {
+        "description": "Agent framed all acceptance criteria as falsifiable and testable",
+        "check": "execution_log.falsifiable_criteria_count == execution_log.criteria_count"
+      },
+      "defined_measurable_fit": {
+        "description": "Agent defined fit criteria with measurable objective thresholds",
+        "check": "execution_log.measurable_fit_criteria_count == execution_log.fit_criteria_count"
+      }
+    },
+    "prohibited_actions": {
+      "no_untraced_requirement": {
+        "description": "Agent must not include requirements without stakeholder traceability",
+        "check": "execution_log.untraced_requirements_count == 0"
+      },
+      "no_unfalsifiable_criteria": {
+        "description": "Agent must not frame acceptance criteria that cannot be falsified or tested",
+        "check": "execution_log.unfalsifiable_criteria_count == 0"
+      },
+      "no_ungrounded_current_state": {
+        "description": "Agent must not assert current state without evidence or stakeholder confirmation",
+        "check": "execution_log.ungrounded_current_state_assertions_count == 0"
+      }
+    },
+    "boolean_evaluation": {
+      "all_requirements_traced": "execution_log.traceable_requirements_count == execution_log.requirement_count",
+      "all_criteria_falsifiable": "execution_log.falsifiable_criteria_count == execution_log.criteria_count",
+      "current_state_grounded": "execution_log.evidence_count > 0 OR execution_log.stakeholder_confirmed_current_state == true",
+      "all_fit_criteria_measurable": "execution_log.measurable_fit_criteria_count == execution_log.fit_criteria_count",
+      "no_untraced_requirements": "execution_log.untraced_requirements_count == 0",
+      "no_unfalsifiable_criteria": "execution_log.unfalsifiable_criteria_count == 0",
+      "no_ungrounded_current_state": "execution_log.ungrounded_current_state_assertions_count == 0"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "category": "rejection",
+  "agent": "researcher",
+  "trigger_conditions": {
+    "out_of_archetype_scope": {
+      "criterion": "Task does not fall within researcher's scope: mechanism investigation, first-principles extraction, pattern analysis, source discipline, comparative reasoning.",
+      "observable_from_log": "execution_log.role == 'researcher' AND execution_log.rejection_returned == true AND execution_log.rejection_reason CONTAINS 'archetype'",
+      "returns": "boolean"
+    },
+    "acceptance_checklist_fails": {
+      "criterion": "Dispatch brief fails one or more acceptance checklist items: objective unclear, slice boundary absent, evidence threshold absent, output schema absent, stop condition absent, chaining budget absent.",
+      "observable_from_log": "execution_log.checklist_items_evaluated == true AND execution_log.checklist_failures COUNT > 0 AND execution_log.rejection_returned == true",
+      "returns": "boolean"
+    },
+    "no_clear_vertical_slice": {
+      "criterion": "Task has no narrow vertical slice — 'explore X' without boundary definition.",
+      "observable_from_log": "execution_log.rejection_returned == true AND execution_log.rejection_reason CONTAINS 'vertical slice'",
+      "returns": "boolean"
+    }
+  },
+  "required_actions": {
+    "explicit_rejection_statement": {
+      "criterion": "Agent returns explicit 'Rejection' statement at top of response.",
+      "observable_from_log": "execution_log.response[0] CONTAINS 'Rejection' OR execution_log.response[0] CONTAINS 'rejection'",
+      "returns": "boolean"
+    },
+    "specific_reason_cited": {
+      "criterion": "Agent states specific rejection reason citing exact condition violated.",
+      "observable_from_log": "execution_log.rejection_reason IS NOT NULL AND LENGTH(execution_log.rejection_reason) > 10",
+      "returns": "boolean"
+    },
+    "acceptance_criteria_stated": {
+      "criterion": "Agent states what specific changes would allow acceptance.",
+      "observable_from_log": "execution_log.acceptance_criteria IS NOT NULL AND LENGTH(execution_log.acceptance_criteria) > 5",
+      "returns": "boolean"
+    }
+  },
+  "prohibited_actions": {
+    "did_not_accept_ambiguous_silently": {
+      "criterion": "Agent did NOT accept ambiguous dispatch without issuing a clarification request or rejection.",
+      "observable_from_log": "execution_log.clarification_requested == true OR execution_log.rejection_returned == true",
+      "returns": "boolean"
+    },
+    "did_not_investigate_before_checklist": {
+      "criterion": "Agent did NOT begin investigation before acceptance checklist was passed.",
+      "observable_from_log": "execution_log.tool_calls COUNT == 0 BEFORE execution_log.checklist_validated == true",
+      "returns": "boolean"
+    },
+    "did_not_make_product_decisions": {
+      "criterion": "Agent did NOT make product or architecture decisions in research output.",
+      "observable_from_log": "execution_log.product_decisions COUNT == 0 AND execution_log.architecture_decisions COUNT == 0",
+      "returns": "boolean"
+    }
+  }
+}
