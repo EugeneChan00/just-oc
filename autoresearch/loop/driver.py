@@ -192,13 +192,19 @@ class EvalDriver:
         top_3 = sorted_rounds[:3]
         top_3_text = json.dumps(top_3, indent=2) if top_3 else "No rounds yet."
 
+        agent_file = str(AGENT_DIR / f"{agent_name}.md")
+
         return f"""{program_text}
 
 ---
 
 ## Target Agent: {agent_name}
+## Agent File: {agent_file}
 
 ## Current Prompt (markdown body)
+The content below is from `{agent_file}` — everything after the YAML frontmatter `---`.
+Your edits will be applied to this text via find-and-replace.
+
 {current_prompt}
 
 ---
@@ -211,7 +217,12 @@ class EvalDriver:
 
 ---
 
-Now analyze the score history, identify the weakest sub-metrics, and propose targeted edits.
+## Eval Specs (what the agent is tested against)
+- Accuracy: autoresearch/agents/{agent_name}/spec/accuracy.json
+- Rejection: autoresearch/agents/{agent_name}/spec/rejection.json
+- Delegation: autoresearch/agents/{agent_name}/spec/delegation.json
+
+Now analyze the score history, identify the weakest sub-metrics, read the eval spec files if needed, and propose targeted edits to `{agent_file}`.
 Return ONLY the JSON object with "reasoning" and "edits" fields."""
 
     # ── Diff-based edit application ──────────────────────────────
