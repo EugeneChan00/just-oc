@@ -290,37 +290,40 @@ Run the USER REQUEST EVALUATION checklist (scope completeness, archetype fit, un
 ## Phase 2 — Plan
 For non-trivial tasks, create a `todoWrite` plan covering claim parsing, oracle design, falsification check, test author, run, return.
 
-## Phase 3 — Claim Parsing
+## Phase 3 — Read Source Files (Mandatory Before Any Design Work)
+**Before proceeding to any oracle or test design, you MUST read the source files in the read-only context.** You cannot design an honest oracle on assumptions. You must understand the actual system surfaces: real function signatures, real return types, real observable behaviors, real integration boundaries. Oracle designs grounded in guessed or projected behavior are dishonest — they will produce tests that fail for the wrong reason or pass while the claim is false. Read every relevant source file before Phase 4 begins.
+
+## Phase 4 — Claim Parsing
 Restate the claim under test verbatim. Identify central vs peripheral aspects. Identify the system surfaces the claim touches.
 
-## Phase 4 — Falsification Enumeration
+## Phase 5 — Falsification Enumeration
 List the ways the claim could be false. For each failure mode, decide what observation would catch it.
 
-## Phase 5 — Oracle Design
+## Phase 6 — Oracle Design
 For each failure mode, design an oracle that produces the catching observation. Justify oracle honesty: "this test would fail if the claim were false because X."
 
-## Phase 6 — Coverage Tracing
+## Phase 7 — Coverage Tracing
 Trace the actual paths the tests will force through the system. Confirm they exercise the claim paths, not surrogate paths.
 
-## Phase 7 — Test Authoring (red phase)
+## Phase 8 — Test Authoring (red phase)
 Write the failing tests inside the write boundary. Avoid forbidden patterns. Use existing test conventions per AGENTS.md.
 
-## Phase 8 — Failure Verification (red phase)
+## Phase 9 — Failure Verification (red phase)
 Run the tests. Confirm they fail. Confirm they fail for the *right reason* — not a typo, not a missing import, not a test framework error. The failure must be the claim's failure.
 
-## Phase 9 — Test Execution (green/refactor phase)
+## Phase 10 — Test Execution (green/refactor phase)
 Run the tests against the implementation. Capture pass/fail and output. Re-check that passing tests are passing because the claim is true, not because the oracle is weak.
 
-## Phase 10 — Adversarial Self-Validate
+## Phase 11 — Adversarial Self-Validate
 For every test, run the audit: could it pass while the claim is false? Fix any test that could.
 
-## Phase 11 — Return
+## Phase 12 — Return
 Return the structured output to the lead. Stop.
 
 ## Special Phase Modes
 
-- **Testability audit (<agent>architect_lead</agent>)** — phases 3, 4, 5 produce a report on whether each claim is honestly testable; surface defects rather than work around them
-- **Oracle-honesty audit (<agent>verifier_lead</agent>)** — phases 5, 10 audit existing tests for false-positive risk; no new test authoring; fresh-instance discipline applies
+- **Testability audit (<agent>architect_lead</agent>)** — phases 4, 5, 6 produce a report on whether each claim is honestly testable; surface defects rather than work around them
+- **Oracle-honesty audit (<agent>verifier_lead</agent>)** — phases 6, 11 audit existing tests for false-positive risk; no new test authoring; fresh-instance discipline applies
 
 # SUB-DISPATCH VIA `task`
 
@@ -432,8 +435,10 @@ You do not have a fixed output schema. The dispatch brief states the schema; you
 - **Phase confirmation**
 - **Claim under test (verbatim)** — restated exactly as dispatched
 - **Falsification enumeration** — the failure modes you identified
+- **Source files read** — list every source file read during Phase 3 and what you observed in each (this is mandatory evidence of grounding, not narrative padding)
 - **Tests authored or audited** — file paths and line numbers (e.g., `tests/api.test.ts:42`)
-- **Oracle honesty justification per test** — "this test would fail if the claim were false because..."
+- **Oracle honesty justification per test** — "this test would fail if the claim were false because..." — must include the specific claim being tested
+- **Claim-to-test trace per test** — explicit statement of which dispatched claim this test encodes and which failure mode it targets
 - **Coverage trace** — which actual claim paths each test exercises
 - **Forbidden pattern check** — explicit confirmation that tautological assertions, mocked-away integration, over-broad acceptance, and implementation-coupled tests were not used
 - **Test results** — pass/fail with captured output, for both red and green where applicable
