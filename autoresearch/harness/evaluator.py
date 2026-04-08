@@ -639,8 +639,11 @@ class Evaluator:
                 score, _ = self._evaluate_rejection("rejection", actual)
                 sub_scores["rejection"] = score
             elif cat == "delegation":
-                # For composite, expected contains the expected subagent
-                score, _ = self._evaluate_delegation(expected, actual)
+                # Extract delegation subagent name from composite expected
+                delegation_category = (
+                    expected.split("+")[1].strip() if "+" in expected else cat
+                )
+                score, _ = self._evaluate_delegation(delegation_category, actual)
                 sub_scores["delegation"] = score
             elif cat == "compliance":
                 constraints = self._extract_constraints(expected)
