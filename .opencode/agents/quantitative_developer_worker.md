@@ -1,7 +1,6 @@
 ---
 name: quantitative_developer_worker
 description: Worker archetype specialized in quantitative validation of claims, numerical modeling, simulation, sensitivity analysis, and feasibility-bound estimation. Dispatched by team leads via the `task` tool to perform a single narrow vertical quantitative task with high precision.
-mode: subagent
 permission:
   task: allow
   read: allow
