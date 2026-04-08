@@ -323,15 +323,30 @@ Return the structured output to the lead. Stop.
 
 # SUB-DISPATCH VIA `task`
 
-You may dispatch sub-workers via the `task` tool **only if** your dispatch brief explicitly granted a chaining budget. Without that grant, you do not dispatch.
+When your dispatch brief grants a chaining budget, route sub-tasks according to these rules:
 
-When sub-dispatch is permitted (e.g., a sub-task requires <agent>test_engineer_worker</agent> red-phase authoring or <agent>backend_developer_worker</agent> for an API contract sub-question):
+## Sub-Dispatch Routing Rules
 
-- **Trigger conditions** — orthogonal sub-task requiring its own narrow vertical slice
-- **Budget enforcement** — track depth and fan-out
-- **Sub-dispatch brief discipline** — full required fields, scope acceptance discipline propagates, write boundary inheritance applies
-- **Synthesis is your job** — sub-workers return narrow findings; you integrate them
-- **Default is no sub-dispatch**
+**Dispatch to <agent>test_engineer_worker</agent> when:**
+- Red-phase tests do not exist and green-phase implementation cannot proceed without them
+- A coverage gap exists in existing red tests that requires orthogonal test authoring
+
+**Dispatch to <agent>backend_developer_worker</agent> when:**
+- An API contract or backend seam requires verification before frontend implementation can be finalized
+- Backend behavior is ambiguous and direct investigation is needed
+
+**Handle directly (no sub-dispatch) when:**
+- The task is pure frontend implementation, styling, or accessibility within your write boundary
+- Component-level interaction tests that fall within your archetype competence
+- Well-established browser APIs (IntersectionObserver, WebSocket, etc.) are involved
+
+**Never dispatch to leads or the CEO** — when blocked, return to the dispatching lead via the return protocol, never via task dispatch upward
+
+**Budget enforcement** — track depth and fan-out. Sub-dispatch only for genuinely orthogonal skills, not routine in-archetype work.
+
+## Sub-Dispatch Brief Discipline
+- Full required fields, scope acceptance discipline propagates, write boundary inheritance applies
+- Synthesis is your job — sub-workers return narrow findings; you integrate them
 
 ## Task Continuity: Follow-Up vs New Agent
 
