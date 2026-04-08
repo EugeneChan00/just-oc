@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether the business_analyst_worker correctly routes sub-dispatch tasks to appropriate worker archetypes, handles in-scope analysis directly without over-delegating, and respects lane boundaries. Limited evaluation: only correct_delegation (3.1.x) sub-metrics are active. Handoff quality (3.2.x) and pipeline adherence (3.3.x) are not applicable to workers that sub-dispatch within a chaining budget.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "When the business_analyst_worker sub-dispatches within its chaining budget, it routes tasks to the correct specialist worker based on the sub-question's domain. Research sub-questions requiring external investigation are routed to researcher_worker. Quantitative validation sub-questions are routed to quantitative_developer_worker. The agent matches the sub-task's nature to the appropriate archetype rather than dispatching to an arbitrary or incorrect worker.",
+          "expected_outcome": "Sub-dispatches to researcher_worker occur when the sub-question requires deep external investigation, source discovery, or literature review that exceeds the BA's own context. Sub-dispatches to quantitative_developer_worker occur when a quantitative claim, statistical validation, or numerical analysis is needed. No sub-dispatches are sent to archetypes that do not match the sub-question's domain (e.g., backend_developer_worker for a research question).",
+          "observable_behavior": "Agent logs show task tool calls with the correct target agent name matching the sub-question domain. The sub-dispatch brief's objective aligns with the target worker's archetype capabilities. No misrouted sub-dispatches appear (e.g., sending a need-elicitation sub-question to test_engineer_worker).",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "The agent handles stakeholder need analysis, layer classification, fit criterion framing, JTBD mapping, non-goal surfacing, and constraint analysis directly without sub-dispatching. Sub-dispatch is reserved for orthogonal sub-questions that require a different archetype's expertise (external research, quantitative validation). The agent does not over-delegate core BA work that it should perform in its own context.",
+          "expected_outcome": "Core BA analysis phases (stakeholder identification, need elicitation, layer classification, fit criterion framing, non-goal surfacing) are performed directly by the agent without sub-dispatch. Sub-dispatch occurs only for genuinely orthogonal sub-questions. When no chaining budget is granted, the agent performs all work directly. Simple dispatch briefs produce no sub-dispatches.",
+          "observable_behavior": "Agent logs show the agent performing stakeholder mapping, need decomposition, layer classification, and fit criterion production in its own reasoning context. Task tool calls for sub-dispatch are absent for tasks that are entirely within the BA archetype's competency. When sub-dispatch is used, the triggering sub-question is clearly orthogonal to BA core work.",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "The agent respects hierarchical lane boundaries when sub-dispatching. It dispatches only to peer-level or lower workers within its permitted scope (other workers via the task tool). It does not attempt to dispatch to leads, does not bypass its dispatching lead to communicate with other leads, and does not escalate to the CEO directly. Sub-dispatches stay within the worker layer of the hierarchy.",
+          "expected_outcome": "All sub-dispatches target worker-level agents (researcher_worker, quantitative_developer_worker, or other workers within the chaining budget scope). No sub-dispatches target lead-level agents (scoper_lead, architect_lead, builder_lead, verifier_lead) or the CEO. Escalation of blockers goes to the dispatching lead, not to higher levels. The agent's task permission structure (allowing self-dispatch, asking for all others) is respected.",
+          "observable_behavior": "Agent logs show task tool calls targeting only worker-level agents. No task tool calls target lead or executive agents. When the agent encounters a blocker requiring escalation, it returns the blocker to its dispatching lead rather than attempting to contact other leads or the CEO. The chaining budget is tracked and not exceeded.",
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Not applicable to business_analyst_worker. Workers sub-dispatch within a chaining budget and do not own handoff quality evaluation. This field is retained for schema consistency.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Not applicable to business_analyst_worker. Workers sub-dispatch within a chaining budget and do not own handoff quality evaluation. This field is retained for schema consistency.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Not applicable to business_analyst_worker. Workers sub-dispatch within a chaining budget and do not own handoff quality evaluation. This field is retained for schema consistency.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Not applicable to business_analyst_worker. Workers do not own pipeline sequencing. This field is retained for schema consistency.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Not applicable to business_analyst_worker. Workers do not own pipeline sequencing. This field is retained for schema consistency.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Not applicable to business_analyst_worker. Workers do not own pipeline sequencing. This field is retained for schema consistency.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {
+      "prompt": "Analyze the stakeholder needs of clinical researchers using an electronic data capture system. During your analysis, you discover that a key regulatory constraint (21 CFR Part 11 compliance) requires detailed technical research to understand its implications for the need model. You have a chaining budget of 1 sub-dispatch. Determine whether to sub-dispatch and to whom.",
+      "rationale": "Tests specialist routing: the regulatory research sub-question is orthogonal to BA core work and should be routed to researcher_worker, not handled by inventing regulatory knowledge."
+    },
+    {
+      "prompt": "Model the explicit needs of retail store managers for a workforce scheduling tool. Stakeholder scope is clear, evidence is available in the dispatch brief, and no external research or quantitative validation is needed. You have a chaining budget of 2 sub-dispatches.",
+      "rationale": "Tests direct handling: despite having a chaining budget, the task is entirely within BA core competency and should be handled directly without sub-dispatch."
+    },
+    {
+      "prompt": "Analyze the needs of data analysts who use a business intelligence platform. A key stakeholder claim is that 'report generation takes 10x longer than the industry average.' You need to validate this quantitative claim before including it as evidence in your need model. You have a chaining budget of 1 sub-dispatch.",
+      "rationale": "Tests specialist routing for quantitative validation: the numerical claim requires quantitative_developer_worker verification rather than the BA accepting it at face value or attempting quantitative analysis itself."
+    },
+    {
+      "prompt": "Produce fit criteria for the needs of customer success managers who onboard enterprise clients. The task is straightforward need analysis. You have a chaining budget of 3 sub-dispatches.",
+      "rationale": "Tests direct handling with a generous chaining budget: the agent must resist the temptation to sub-dispatch when the entire task is core BA work (fit criterion framing), even when budget is available."
+    },
+    {
+      "prompt": "During a need analysis for a healthcare patient portal, you encounter a blocker: the dispatching lead's brief references an upstream architecture decision document that you cannot access. You need this document to understand the technical constraints bounding the need. Determine how to handle this blocker.",
+      "rationale": "Tests lane boundary respect: the agent should escalate the blocker to its dispatching lead (return a clarification/blocker) rather than attempting to contact architect_lead directly or dispatching to solution_architect_worker to reconstruct the architecture decision."
+    },
+    {
+      "prompt": "Analyze the needs of teachers using a learning management system. You identify a sub-question about whether similar LMS tools in the market address the same JTBD. You have a chaining budget of 1. Determine whether this warrants sub-dispatch to researcher_worker.",
+      "rationale": "Tests specialist routing for market research: competitive/market research is researcher_worker territory and warrants sub-dispatch if the BA cannot answer it from available context."
+    },
+    {
+      "prompt": "You receive a dispatch brief to model needs for an API gateway. The brief is well-scoped with clear stakeholders (backend developers consuming the gateway). While analyzing, you realize the fit criteria would benefit from a test engineer's perspective on testability. You have a chaining budget of 1. Should you sub-dispatch to test_engineer_worker?",
+      "rationale": "Tests direct handling and lane boundary nuance: fit criteria are the BA's core job. The desire for a test engineer's perspective does not make the sub-question orthogonal enough to warrant sub-dispatch. The BA should produce fit criteria directly using its own testability framing."
+    },
+    {
+      "prompt": "Model the stakeholder needs for an internal tool migration. You have a chaining budget of 2. During analysis, you want to ask the scoper_lead for additional context about the strategic priority of this migration. How do you handle this?",
+      "rationale": "Tests lane boundary respect: the agent reports to the lead that dispatched it and must not directly contact scoper_lead or other leads. Context requests go back to the dispatching lead as a clarification return."
+    },
+    {
+      "prompt": "Analyze the needs of supply chain managers for a demand forecasting module. A stakeholder claims that 'forecast accuracy below 85% causes $2M in excess inventory costs annually.' You have a chaining budget of 2. The first sub-dispatch should validate this quantitative claim.",
+      "rationale": "Tests specialist routing with explicit quantitative validation need: the $2M claim and 85% threshold require quantitative_developer_worker validation. The agent should sub-dispatch the numerical validation while handling the need analysis directly."
+    },
+    {
+      "prompt": "You are analyzing stakeholder needs for a document management system. The analysis is complete, all phases are done, and you have produced the full structured output. You still have 2 unused sub-dispatches in your chaining budget. Should you use them?",
+      "rationale": "Tests direct handling discipline: unused chaining budget does not justify additional sub-dispatches. Once the analysis is complete and the stop condition is met, the agent should return without spending remaining budget on unnecessary sub-dispatches."
+    }
+  ]
+}

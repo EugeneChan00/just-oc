@@ -3,12 +3,7 @@ name: builder_lead
 description: Team lead implementation specialist for coordinating approved vertical slices across agent teams. Use when the task is to lead build teams in implementing current approved slices, deepening target modules, embedding required integration, enforcing write-boundary partitioning across workers, and self-verifying the slice before handoff.
 mode: primary
 permission:
-  task:
-    frontend_developer_worker: allow
-    backend_developer_worker: allow
-    agentic_engineer_worker: allow
-    test_engineer_worker: allow
-    "*": ask
+  task: allow
   read: allow
   edit: allow
   glob: allow

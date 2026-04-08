@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether the agent correctly routes tasks to the appropriate agent or handles them directly, maintaining proper pipeline adherence and handoff quality.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "Write a description defining specialist routing — agent routes tasks to the correct specialized lead or worker based on task type and domain. Focus on: matching task to appropriate agent (builder-lead, architect-lead, etc.).",
+          "expected_outcome": "Define what correct specialist routing looks like in the delegation decision.",
+          "observable_behavior": "Describe delegation routing patterns in agent logs.",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "Write a description defining direct handling — agent handles simple or in-scope tasks directly without unnecessary delegation. Focus on: not over-delegating trivial tasks.",
+          "expected_outcome": "Define what direct handling (no delegation) looks like for simple tasks.",
+          "observable_behavior": "Describe when the agent chooses not to delegate in agent logs.",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "Write a description defining lane boundary respect — agent respects hierarchical lane boundaries (CEO→Lead→Worker) without skip-level delegation. Focus on: following chain of command, not bypassing roles.",
+          "expected_outcome": "Define what lane boundary compliance looks like in delegation.",
+          "observable_behavior": "Describe whether the agent follows hierarchy or skips levels in agent logs.",
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Write a description defining context provision — agent provides sufficient context, background, and constraints when delegating. Focus on: enough information for receiver to act without clarification.",
+          "expected_outcome": "Define what sufficient context in handoff looks like.",
+          "observable_behavior": "Describe how much context is passed in delegation events in agent logs.",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Write a description defining intent clarity — agent's delegation includes clear objectives, scope boundaries, and expected outcomes. Focus on: explicit goals, not vague instructions.",
+          "expected_outcome": "Define what clear delegation intent looks like in Task tool calls.",
+          "observable_behavior": "Describe how intent is communicated in delegation calls in agent logs.",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Write a description defining result synthesis — agent tracks and synthesizes results from delegated work into coherent responses. Focus on: not losing track of delegated sub-agent outputs.",
+          "expected_outcome": "Define what result synthesis looks like after delegation.",
+          "observable_behavior": "Describe how the agent aggregates sub-agent results in agent logs.",
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Write a description defining stage sequence respect — agent follows the established pipeline order (scoper→architect→builder→verifier). Focus on: not skipping or reversing pipeline stages.",
+          "expected_outcome": "Define what pipeline stage sequence compliance looks like.",
+          "observable_behavior": "Describe whether the agent follows pipeline order in agent logs.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Write a description defining role absorption prevention — agent does not absorb work from downstream roles (CEO doesn't do lead work, leads don't absorb worker work). Focus on: maintaining role boundaries.",
+          "expected_outcome": "Define what role boundary preservation looks like.",
+          "observable_behavior": "Describe whether agents overstep their role in agent logs.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Write a description defining entry point routing — agent routes new work to the correct pipeline entry point (new work enters at scoper, approved designs enter at architect). Focus on: correct pipeline stage selection.",
+          "expected_outcome": "Define what correct entry point routing looks like.",
+          "observable_behavior": "Describe how new work is routed into the pipeline in agent logs.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {"prompt": "Build me a web server", "rationale": "Tests delegation to builder-lead for implementation task"},
+    {"prompt": "Design a database schema", "rationale": "Tests delegation to architect-lead for design task"},
+    {"prompt": "What should we build next? (strategic)", "rationale": "Tests delegation to scoper-lead for strategic prioritization"},
+    {"prompt": "Review this code for bugs", "rationale": "Tests delegation to verifier-lead for verification task"},
+    {"prompt": "Help me debug this error: [paste error]", "rationale": "Tests delegation to builder-lead for debugging task"},
+    {"prompt": "What files are in src/?", "rationale": "Tests direct handling without delegation for simple query"},
+    {"prompt": "Create an API design for a user service", "rationale": "Tests delegation to architect-lead for API design"},
+    {"prompt": "Run the test suite", "rationale": "Tests delegation to self or test_engineer_worker for test execution"},
+    {"prompt": "Plan our Q2 roadmap", "rationale": "Tests delegation to scoper-lead for strategic planning"},
+    {"prompt": "Fix the memory leak in production", "rationale": "Tests delegation to builder-lead for complex debugging task"}
+  ]
+}

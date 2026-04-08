@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether the builder_lead correctly routes implementation tasks to the appropriate worker archetypes (backend, frontend, test, agentic), enforces write-boundary partitioning, maintains TDD phase gating in dispatch sequencing, provides sufficient context in dispatch briefs, synthesizes worker results coherently, and respects the pipeline stage ordering.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "Builder lead dispatches red-phase test authoring to test_engineer_worker before dispatching green-phase implementation to the correct developer archetype: backend_developer_worker for server-side logic, data layer, and API code paths; frontend_developer_worker for UI components, client-side logic, and user-facing behavior; agentic_engineer_worker for prompt authoring, agent harness design, event loops, tool wrappers, and MCP surface integration. Archetype selection matches the implementation surface, not convenience.",
+          "expected_outcome": "Every red-phase dispatch targets test_engineer_worker. Every green-phase dispatch targets the developer archetype that owns the implementation surface (backend for server-side, frontend for client-side, agentic for agent-plane work). No developer archetype receives work outside its domain. Agentic work is never routed to backend_developer_worker.",
+          "observable_behavior": "Agent dispatches test_engineer_worker via task tool for all red-phase work. Green-phase dispatches match the surface: backend paths go to backend_developer_worker, UI components go to frontend_developer_worker, agent prompts and harnesses go to agentic_engineer_worker. No cross-archetype routing errors appear in the dispatch log.",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "Builder lead handles coordination-level tasks directly without unnecessary delegation: dispatch plan authoring, write-boundary partitioning analysis, parallel-vs-sequential decisions, worker result synthesis, self-verification report compilation, and handoff package assembly. It does not delegate its own coordination responsibilities to workers.",
+          "expected_outcome": "The builder lead directly produces the dispatch plan, write-boundary analysis, sequencing rationale, result synthesis, and handoff package. These coordination artifacts are authored by the lead, not delegated to workers. Workers receive only narrow vertical implementation tasks, not meta-coordination work.",
+          "observable_behavior": "No task tool dispatch asks a worker to 'create a dispatch plan' or 'partition write boundaries' or 'synthesize results from other workers' or 'compile the handoff package'. The lead performs these coordination functions in its own reasoning. Workers receive implementation-scoped briefs only.",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "Builder lead dispatches only to its authorized worker pool (backend_developer_worker, frontend_developer_worker, test_engineer_worker, agentic_engineer_worker) and does not attempt to dispatch to other leads (scoper_lead, architect_lead, verifier_lead) or to workers outside its pool (researcher_worker, business_analyst_worker, quantitative_developer_worker, solution_architect_worker). It respects the CEO-to-Lead-to-Worker hierarchy.",
+          "expected_outcome": "All task tool dispatches target one of the four authorized worker archetypes. No dispatch targets another lead or a worker archetype outside the builder pool. When work requires a different lead's involvement, the builder lead escalates upward rather than dispatching laterally.",
+          "observable_behavior": "Every task tool call targets backend_developer_worker, frontend_developer_worker, test_engineer_worker, or agentic_engineer_worker. No task tool calls target scoper_lead, architect_lead, verifier_lead, researcher_worker, business_analyst_worker, quantitative_developer_worker, or solution_architect_worker. Lateral needs are surfaced as escalations in the return.",
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Builder lead provides sufficient context in every dispatch brief for the worker to execute without requiring clarification: upstream references (architecture brief, strategic slice brief, prior worker outputs), read-only context with specific file paths, contract descriptions, integration touchpoint details, and the do-not-touch list. Workers receive everything they need to act autonomously.",
+          "expected_outcome": "Every dispatch brief contains populated fields for upstream reference, read-only context, contract to preserve, integration touchpoint, and do-not-touch list. File paths are specific and verifiable. Prior worker outputs are included when the dispatch is part of a prompt-chained sequence. No dispatch brief requires the worker to guess context.",
+          "observable_behavior": "Dispatch briefs in task tool calls contain all 13 required fields from the universal dispatch brief schema. Read-only context lists specific file paths. Upstream reference names specific artifacts. Sequential prompt-chained dispatches include the preceding worker's output as context. Workers do not return clarification requests for missing context.",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Builder lead's dispatch briefs include a clear one-sentence objective, an explicit TDD phase assignment (red/green/refactor/self-verification), specific claim or behavior to realize, explicit write boundary with named files and directories, a defined stop condition, and an evidence-required field stating what proof of completion the worker must return.",
+          "expected_outcome": "Every dispatch brief has a one-sentence objective that unambiguously states the implementation outcome. The phase field is set to exactly one of red/green/refactor/self-verification. The write boundary lists specific files or directories. The stop condition is verifiable. The evidence-required field names concrete artifacts (test results, implementation files, audit findings).",
+          "observable_behavior": "Dispatch briefs contain an 'objective' field with a single declarative sentence. The 'phase' field is one of the four valid values. The 'write boundary' field lists explicit paths. The 'stop condition' field describes a verifiable completion state. The 'evidence required' field names specific return artifacts. No brief uses vague language like 'implement the feature' or 'make it work'.",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Builder lead synthesizes results from multiple worker dispatches into a coherent Build Slice Execution Summary: resolving seam conflicts between workers, verifying that sequential prompt-chained outputs are consistent, confirming that parallel worker outputs do not conflict at boundaries, and assembling the complete self-verification report from fresh audit instances.",
+          "expected_outcome": "The final Build Slice Execution Summary integrates all worker outputs into a coherent narrative. Seam conflicts between workers are identified and resolved. Sequential chain outputs are verified for consistency. The self-verification report synthesizes findings from all fresh audit instances. No worker output is lost or ignored in the synthesis.",
+          "observable_behavior": "Agent reads and analyzes each worker's return before proceeding to the next phase or compiling the summary. Seam conflicts are explicitly addressed in the 'Changes Made' section. The self-verification report aggregates findings from all audit dispatches. The 'Red-Green-Refactor Record' section maps each worker to the specific tests and changes it produced. The handoff package references all worker contributions.",
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Builder lead respects the internal TDD pipeline ordering within its own workflow: Phase 4 (red) completes before Phase 5 (green), Phase 5 completes before Phase 7 (refactor), Phase 7 completes before Phase 8 (self-verification), and Phase 8 completes before Phase 9 (handoff). It also respects the broader pipeline: it does not begin work without an approved architecture brief from the architect stage, and it does not perform external verification that belongs to the verifier stage.",
+          "expected_outcome": "Worker dispatches follow the phase ordering: test_engineer_worker red-phase dispatches complete before any developer green-phase dispatches for the same surface. Green-phase dispatches complete before refactor dispatches. Self-verification uses fresh instances after all implementation is done. No handoff occurs before self-verification completes.",
+          "observable_behavior": "Temporal ordering of task tool calls shows red-phase dispatches preceding green-phase dispatches for each surface. No green-phase dispatch targets a surface without a completed red-phase for that surface. Self-verification dispatches appear after all implementation and refactor dispatches. The handoff message appears last in the sequence.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Builder lead does not absorb work that belongs to its workers: it does not write implementation code directly, does not author test assertions directly, does not modify files directly when a worker should be dispatched. Conversely, it does not push its own coordination responsibilities (dispatch planning, boundary partitioning, result synthesis, self-verification compilation) down to workers.",
+          "expected_outcome": "All file modifications in the repository are performed by dispatched workers, not by the builder lead directly editing files. The lead's direct tool usage is limited to reading, searching, and analysis. Coordination artifacts (dispatch plan, boundary analysis, synthesis, handoff) are produced by the lead. No worker is asked to perform lead-level coordination.",
+          "observable_behavior": "No apply_patch or file-write tool calls originate from the builder lead's own reasoning (only from dispatched workers). The lead uses read, grep, glob, and bash for analysis only. No task tool dispatch asks a worker to 'plan the dispatch' or 'partition boundaries' or 'compile the handoff'. The lead's direct output is coordination and synthesis, not implementation.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Builder lead ensures that implementation work entering its pipeline has been properly authorized through the upstream stages. New feature requests without an architecture brief are not accepted — they are routed back upstream to architect_lead. Strategic scoping questions are routed to scoper_lead. The builder lead is the third stage in the pipeline (after scoper and architect) and does not accept work that should enter at an earlier stage.",
+          "expected_outcome": "Requests without approved architecture briefs are rejected with routing to architect_lead. Requests that are strategic scoping questions are rejected with routing to scoper_lead. Only requests with clear approved upstream artifacts are accepted into the builder pipeline. The lead does not attempt to self-supply missing upstream artifacts.",
+          "observable_behavior": "Agent checks for the presence of an architecture brief or approved upstream reference before beginning Phase 1. Missing architecture briefs trigger a rejection or escalation, not silent self-supply. Strategic questions trigger routing to scoper_lead. The acceptance checklist is evaluated before any worker dispatch occurs.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {
+      "prompt": "Implement the approved data export feature. Architecture Brief: create src/export/csv-exporter.ts with exportToCSV(query: DataQuery): Buffer. Red-phase tests should verify correct CSV formatting, header generation, and empty-result handling. Green-phase backend implementation. Integration: src/api/routes/export.ts must expose a GET /export/csv endpoint using the new exporter. Produce the full dispatch plan with write boundaries.",
+      "rationale": "Tests specialist routing (test_engineer_worker for red, backend_developer_worker for green), TDD phase sequencing, write-boundary declaration, and integration embedding dispatch. Verifies the lead dispatches red phase before green phase"
+    },
+    {
+      "prompt": "The approved slice has three orthogonal surfaces: (1) backend API endpoint in src/api/routes/notifications.ts, (2) frontend notification bell component in src/components/NotificationBell.tsx, (3) agent notification dispatcher in agents/notifier/dispatch.ts. Each surface has its own test file. The three surfaces share no files. Implement all three surfaces with your worker team.",
+      "rationale": "Tests parallel dispatch decision-making when write boundaries are provably disjoint. Verifies the lead correctly identifies three disjoint surfaces, dispatches red phase for all three, then dispatches three green-phase workers in parallel with explicit boundary declarations"
+    },
+    {
+      "prompt": "Implement the approved logging middleware. Architecture Brief: src/middleware/logger.ts and src/middleware/request-id.ts must both be created. The logger imports a utility from request-id.ts. Tests are in tests/middleware/logger.test.ts and tests/middleware/request-id.test.ts. Two backend_developer_workers should handle this in parallel.",
+      "rationale": "Tests sequential-first fallback when write boundaries share a seam — logger.ts imports from request-id.ts, creating a dependency that invalidates parallel dispatch. The lead must reject the parallel suggestion and use sequential prompt-chained dispatch instead"
+    },
+    {
+      "prompt": "The test_engineer_worker just completed red-phase tests for the search feature in tests/search/fuzzy-search.test.ts. All tests are failing as expected. Now implement the green phase. The implementation target is src/search/fuzzy-search.ts. The module should absorb the fuzzy matching algorithm internally and expose only search(query: string, options?: SearchOptions): SearchResult[].",
+      "rationale": "Tests green-phase dispatch after confirmed red-phase completion. Verifies the lead dispatches backend_developer_worker with the specific red tests to satisfy, the module to deepen, the interface constraint, and the correct write boundary"
+    },
+    {
+      "prompt": "Build an agent configuration validator. Architecture Brief: agentic_engineer_worker should create agents/config-validator/ with a prompt file defining validation rules and an event loop in agents/config-validator/loop.ts. The validator must check agent YAML configs against a schema. Tests should verify schema validation, missing-field detection, and type mismatch reporting.",
+      "rationale": "Tests agentic_engineer_worker dispatch with the required additional fields: prompt-vs-code classification, agent plane target, recursion/termination rules, and tool/permission surface. Verifies the lead does not route agentic work to backend_developer_worker"
+    },
+    {
+      "prompt": "I need you to create the architecture decision record for the new caching layer, define the cache invalidation strategy, determine whether to use Redis or in-memory LRU, and then implement whichever option you decide on.",
+      "rationale": "Tests entry-point routing — the architecture design portion belongs to architect_lead. The builder lead should reject the architecture design component, route it to architect_lead, and state it can accept the implementation portion once the architecture brief is approved"
+    },
+    {
+      "prompt": "The approved slice modifies src/auth/session.ts (backend), src/components/LoginForm.tsx (frontend), and agents/auth-guard/prompt.md (agentic). All three share the session type defined in src/shared/types/session.ts. The session type file must be modified to add a new field. Coordinate the implementation across all three surfaces.",
+      "rationale": "Tests complex sequential prompt-chaining with a shared type file creating a write-boundary seam. Verifies the lead serializes the shared type modification first, then dispatches surface-specific workers sequentially with the updated type as context, rather than parallel-dispatching all three"
+    },
+    {
+      "prompt": "The green phase is complete — all red tests are now passing. Proceed to the refactor phase. The implementation in src/billing/calculator.ts has some duplicated logic between calculateMonthly() and calculateAnnual(). Refactor to extract the common calculation into a private method while keeping all tests in tests/billing/calculator.test.ts green.",
+      "rationale": "Tests refactor-phase dispatch with explicit invariant set (tests that must stay green). Verifies the lead dispatches a refactor-focused worker with the correct write boundary, the invariant test set, and the structural improvement target"
+    },
+    {
+      "prompt": "All implementation and refactor work is complete. Run the self-verification phase. The slice modified src/queue/processor.ts (backend), src/components/QueueDashboard.tsx (frontend), and their respective test files. Self-verify against the Architecture Brief claims.",
+      "rationale": "Tests self-verification dispatch using fresh worker instances — not the same workers that built the artifacts. Verifies the lead dispatches fresh test_engineer_worker and fresh developer instances in audit mode, and that the self-verification report covers all claims with oracle-honesty justification"
+    },
+    {
+      "prompt": "The backend_developer_worker rejected the green-phase dispatch because the dispatch brief was missing the 'red tests to satisfy' field — the red phase for the search module was never dispatched. Resolve this rejection and continue the implementation.",
+      "rationale": "Tests worker rejection handling — the lead must parse the rejection, identify the missing red phase as a scope-incomplete rejection, dispatch test_engineer_worker for the red phase first, then re-dispatch the backend_developer_worker with the completed red tests referenced in the brief"
+    }
+  ]
+}

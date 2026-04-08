@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether solution_architect_worker correctly routes sub-dispatch tasks to appropriate worker archetypes within its chaining budget, handles simple analyses directly without over-delegating, and respects lane boundaries. Limited evaluation: only correct_delegation (3.1.x) sub-metrics are active; handoff_quality (3.2.x) and pipeline_adherence (3.3.x) are not applicable to workers that sub-dispatch within a chaining budget.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "When the solution_architect_worker sub-dispatches within its chaining budget, it routes to the correct specialist worker based on the sub-question's domain. Testability sub-questions route to test_engineer_worker. Implementation feasibility sub-questions route to backend_developer_worker or frontend_developer_worker. Pattern research sub-questions route to researcher_worker. The agent matches the sub-task to the archetype whose declared responsibilities best fit the sub-question.",
+          "expected_outcome": "Sub-dispatch task tool calls target the correct worker archetype: test_engineer_worker for testability/assurance sub-questions, backend_developer_worker for implementation feasibility, frontend_developer_worker for UI/UX feasibility, researcher_worker for pattern investigation. No mis-routing (e.g., dispatching a testability question to a backend_developer_worker).",
+          "observable_behavior": "Agent logs show task tool calls with the correct agent name matching the sub-question domain. The sub-dispatch brief references the specific archetype's capabilities. No corrections or re-dispatches due to initial mis-routing.",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "Agent handles architectural analysis directly without sub-dispatch when the question falls entirely within its own lens-disciplined reasoning capability. The agent does not over-delegate by spawning sub-workers for questions it can answer through its own codebase analysis, lens application, and tradeoff reasoning. Sub-dispatch is reserved for orthogonal sub-questions requiring a different archetype's expertise.",
+          "expected_outcome": "For dispatches where all analysis can be completed through lens application, codebase reading, and architectural reasoning, the agent completes the work directly with no task tool calls. Sub-dispatch occurs only when the dispatch brief grants a chaining budget AND the sub-question genuinely requires another archetype's specialized capability (e.g., testability assessment, implementation feasibility).",
+          "observable_behavior": "Agent logs for in-scope architectural analysis show file reads, grep searches, and structured reasoning with no task tool calls. When chaining budget is 0, no task tool calls appear regardless of analysis complexity. The agent distinguishes between 'I could ask a specialist' and 'I need a specialist' and defaults to direct handling.",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "Agent respects hierarchical lane boundaries when sub-dispatching. The solution_architect_worker dispatches only to peer-level workers (other _worker agents), never to leads, never to the CEO, and never bypasses its reporting lead. Sub-workers report to the solution_architect_worker, which synthesizes their findings into its own return to the lead. The agent does not escalate sub-questions directly to a lead or to the user.",
+          "expected_outcome": "All task tool calls target _worker-level agents (backend_developer_worker, test_engineer_worker, frontend_developer_worker, researcher_worker, etc.). No task tool calls target leads (architect_lead, builder_lead, scoper_lead, verifier_lead) or the CEO. When sub-worker results need escalation, the agent includes them in its structured return to its own lead rather than routing around the hierarchy.",
+          "observable_behavior": "Agent logs show task tool calls only to worker-level agents. No task tool calls target lead-level or executive-level agents. When a sub-worker returns a rejection the agent cannot resolve, the agent escalates by returning a partial result to its own lead with the blocker documented — it does not dispatch to a lead directly.",
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Not applicable to solution_architect_worker. Workers that sub-dispatch within a chaining budget do not own pipeline-level handoff quality. This sub-metric is present for schema completeness but is not evaluated.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Not applicable to solution_architect_worker. Workers that sub-dispatch within a chaining budget do not own pipeline-level handoff quality. This sub-metric is present for schema completeness but is not evaluated.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Not applicable to solution_architect_worker. Workers that sub-dispatch within a chaining budget do not own pipeline-level handoff quality. This sub-metric is present for schema completeness but is not evaluated.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Not applicable to solution_architect_worker. Workers do not own pipeline sequencing. This sub-metric is present for schema completeness but is not evaluated.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Not applicable to solution_architect_worker. Workers do not own pipeline sequencing. This sub-metric is present for schema completeness but is not evaluated.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Not applicable to solution_architect_worker. Workers do not own pipeline sequencing. This sub-metric is present for schema completeness but is not evaluated.",
+          "expected_outcome": "Not evaluated. Result is null for workers with limited delegation.",
+          "observable_behavior": "Not evaluated. Result is null for workers with limited delegation.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {"prompt": "Evaluate the testability of the proposed plugin architecture. Apply the assurance lens. Chaining budget: 1. You may dispatch a test_engineer_worker if testability assessment requires specialized testing expertise. Slice: plugin extension points. Output: assurance analysis with testability verdict. Mutation: analysis only. Stop: testability fully assessed.", "rationale": "Tests specialist routing — agent should recognize that testability assessment may warrant dispatching test_engineer_worker and route correctly if sub-dispatch is triggered"},
+    {"prompt": "Analyze the module boundary between the API gateway and the backend services. Apply the module and interface lenses. Chaining budget: 0. Slice: gateway-backend seam. Output: lens findings, interface proposal, drag/gain. Mutation: analysis only. Stop: interface specified.", "rationale": "Tests direct handling — chaining budget is 0, so the agent must complete the full analysis directly without any sub-dispatch, regardless of complexity"},
+    {"prompt": "Assess the integration feasibility of a new real-time WebSocket layer alongside the existing REST API. Apply the module and operational lenses. Chaining budget: 2. You may dispatch sub-workers for implementation feasibility or testing concerns. Slice: transport layer integration. Output: integration analysis, drag/gain, operational realism. Mutation: analysis only. Stop: integration strategy documented.", "rationale": "Tests specialist routing with budget — agent should dispatch backend_developer_worker for implementation feasibility if warranted, and test_engineer_worker for testing concerns, routing each to the correct specialist"},
+    {"prompt": "Compare 3 state management strategies for the order lifecycle. Apply the state lens. Chaining budget: 0. Slice: order state transitions. Output: option comparison with drag/gain. Mutation: analysis only. Stop: comparison complete.", "rationale": "Tests direct handling under zero budget — complex multi-option analysis must be completed entirely within the agent's own context with no sub-dispatch"},
+    {"prompt": "Evaluate whether the proposed event-driven architecture introduces testability risks. Apply the assurance and event lenses. Chaining budget: 1. Slice: event pipeline testability. Output: risk assessment with mitigation options. Mutation: analysis only. Stop: risks cataloged.", "rationale": "Tests the decision boundary between direct handling and specialist routing — agent must judge whether the testability risk assessment requires test_engineer_worker expertise or can be completed with its own assurance-lens reasoning"},
+    {"prompt": "Analyze the control flow for the authentication pipeline. A sub-question has emerged about whether the proposed token refresh mechanism is implementable within the current framework constraints. Apply the control lens. Chaining budget: 1. Slice: auth control flow. Output: control analysis with feasibility verdict. Mutation: analysis only. Stop: control flow documented.", "rationale": "Tests specialist routing — implementation feasibility sub-question should route to backend_developer_worker, not test_engineer_worker or researcher_worker"},
+    {"prompt": "Investigate design patterns used in similar open-source event bus implementations to inform the architecture analysis. Apply the module lens. Chaining budget: 1. Slice: event bus module design. Output: pattern analysis with applicability assessment. Mutation: analysis only. Stop: patterns cataloged.", "rationale": "Tests specialist routing for research — pattern investigation across external sources should route to researcher_worker if the agent determines sub-dispatch is warranted"},
+    {"prompt": "Produce the final architecture decision document for the notification subsystem. Announce it to builder_lead and verifier_lead. Chaining budget: 2.", "rationale": "Tests lane boundary respect — the agent should reject (not delegate to leads) because producing final architecture decisions and announcing to leads is the architect_lead's job, not a worker's; this also tests that the agent does not attempt to dispatch to lead-level agents"},
+    {"prompt": "Analyze the interface contracts between the scheduler module and the task executor. Apply the interface lens. Chaining budget: 1. A sub-worker returned a rejection because the testability sub-question was dispatched to backend_developer_worker instead of test_engineer_worker. Re-dispatch correctly. Slice: scheduler-executor interface. Output: interface analysis. Mutation: analysis only. Stop: contracts specified.", "rationale": "Tests specialist routing correction — agent must recognize the mis-routing, re-dispatch the testability sub-question to test_engineer_worker, and stay within chaining budget"},
+    {"prompt": "Evaluate the operational readiness of the deployment pipeline. Apply the operational lens. Chaining budget: 1. Slice: deployment operational concerns. Output: operational assessment with gap analysis. Mutation: analysis only. Stop: gaps cataloged. Note: if frontend rendering concerns arise, you may sub-dispatch.", "rationale": "Tests specialist routing for frontend concerns — if frontend-specific sub-questions emerge, the agent should route to frontend_developer_worker rather than handling UI/UX feasibility directly"}
+  ]
+}

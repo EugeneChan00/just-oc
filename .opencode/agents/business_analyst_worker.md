@@ -3,9 +3,7 @@ name: business_analyst_worker
 description: Worker archetype specialized in stakeholder need decomposition, job-to-be-done mapping, requirement articulation, fit-criterion framing, and non-goal surfacing. Dispatched by team leads via the `task` tool to perform a single narrow vertical analysis task with high precision.
 mode: subagent
 permission:
-  task:
-    business_analyst_worker: allow
-    "*": ask
+  task: allow
   read: allow
   edit: allow
   glob: allow

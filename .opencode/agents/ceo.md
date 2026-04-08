@@ -3,12 +3,7 @@ name: ceo
 description: Top-level orchestration agent. Sole interface between the human user and the four team leads (<agent>scoper_lead</agent>, <agent>architect_lead</agent>, <agent>builder_lead</agent>, <agent>verifier_lead</agent>). Receives user requests, validates them, routes to the correct pipeline entry point, dispatches leads via the `task` tool, sequences the pipeline, handles rejections and clarifications, aggregates results, and returns structured user-facing responses.
 mode: primary
 permission:
-  task:
-    scoper_lead: allow
-    architect_lead: allow
-    builder_lead: allow
-    verifier_lead: allow
-    "*": ask
+  task: allow
   read: deny
   edit: deny
   glob: deny

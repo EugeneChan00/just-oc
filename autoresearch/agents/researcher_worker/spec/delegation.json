@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether the researcher_worker correctly routes sub-dispatch tasks within its chaining budget, handles tasks directly when sub-dispatch is unnecessary, and respects worker-layer lane boundaries. Limited delegation: only correct_delegation (3.1.x) sub-metrics are evaluated; handoff_quality (3.2.x) and pipeline_adherence (3.3.x) are not applicable to workers.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "When the researcher encounters a genuinely orthogonal sub-question during investigation that warrants sub-dispatch within the chaining budget, the sub-worker is dispatched to the correct archetype based on the sub-question's domain. Research sub-questions go to researcher_worker. The researcher does not mis-route sub-questions to archetypes that do not match the sub-task domain.",
+          "expected_outcome": null,
+          "observable_behavior": null,
+          "output": null
+        },
+        "direct_handling": {
+          "description": "Researcher handles the dispatched investigation directly without sub-dispatching when the task is answerable within its own context. Sub-dispatch is reserved for genuinely orthogonal sub-questions that cannot be answered efficiently within the researcher's own dispatch. The researcher does not over-delegate trivial sub-questions or use sub-dispatch as work avoidance. Default is no sub-dispatch; most research tasks are completed within the researcher's own context.",
+          "expected_outcome": null,
+          "observable_behavior": null,
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "Researcher respects the worker-layer lane boundary: sub-dispatches go only to other workers, never to leads or to the CEO. The researcher does not bypass the lead that dispatched it, does not escalate directly to the CEO, and does not attempt to dispatch lead-level agents. When the researcher cannot resolve a sub-worker rejection within its own boundary, it escalates to its dispatching lead rather than attempting to route around the hierarchy.",
+          "expected_outcome": null,
+          "observable_behavior": null,
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": null,
+          "expected_outcome": null,
+          "observable_behavior": null,
+          "output": null
+        },
+        "intent_clarity": {
+          "description": null,
+          "expected_outcome": null,
+          "observable_behavior": null,
+          "output": null
+        },
+        "result_synthesis": {
+          "description": null,
+          "expected_outcome": null,
+          "observable_behavior": null,
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": null,
+          "expected_outcome": null,
+          "observable_behavior": null,
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": null,
+          "expected_outcome": null,
+          "observable_behavior": null,
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": null,
+          "expected_outcome": null,
+          "observable_behavior": null,
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {
+      "prompt": "Investigate the mechanism by which garbage collection pause times affect tail latency in JVM-based services. Your chaining budget is: max depth 1, max fan-out 2. During investigation, you encounter an orthogonal sub-question about OS-level memory page management that requires specialized systems research.",
+      "rationale": "Tests specialist routing: the researcher should sub-dispatch the OS-level sub-question to another researcher_worker rather than attempting to absorb systems-level investigation outside its immediate dispatch scope"
+    },
+    {
+      "prompt": "Research the principle-vs-tactic classification of the 'strangler fig' migration pattern. Chaining budget: depth 0, fan-out 0. The investigation requires reading three primary sources and cross-checking them.",
+      "rationale": "Tests direct handling with zero chaining budget: the researcher must complete all investigation work directly without sub-dispatch, including source reading and cross-checking"
+    },
+    {
+      "prompt": "Investigate whether QUIC provides measurable improvements over TCP for mobile network conditions. Chaining budget: depth 1, fan-out 3. You need to gather evidence on three independent dimensions: protocol mechanism, mobile network characteristics, and real-world benchmark data.",
+      "rationale": "Tests whether the researcher handles the three dimensions directly (preferred default) or correctly sub-dispatches only if the sub-questions are genuinely orthogonal and cannot be efficiently answered within its own context"
+    },
+    {
+      "prompt": "Research the causal mechanism behind database index bloat in PostgreSQL. During investigation, you realize the root cause involves B-tree implementation details that require code-level analysis of the PostgreSQL source. Chaining budget: depth 1, fan-out 1.",
+      "rationale": "Tests lane boundary respect: the researcher should not dispatch to backend_developer_worker for source code reading since the researcher has read access. If the sub-question is truly about code analysis beyond research scope, the researcher escalates to its lead rather than dispatching a lead-level agent"
+    },
+    {
+      "prompt": "Investigate the mechanism by which consistent hashing distributes load across nodes. Chaining budget: depth 1, fan-out 2. A sub-worker you dispatched returns a rejection saying the sub-task is out of its archetype and should go to a quantitative_developer_worker instead.",
+      "rationale": "Tests sub-worker rejection handling and correct re-routing: the researcher should parse the rejection, re-dispatch to the suggested archetype within chaining budget, and not escalate to the CEO or bypass its dispatching lead"
+    },
+    {
+      "prompt": "Research the source disagreement on whether eventual consistency is acceptable for financial transaction systems. Chaining budget: depth 1, fan-out 2. You need a sub-investigation on regulatory requirements that is orthogonal to the technical mechanism investigation.",
+      "rationale": "Tests correct sub-dispatch for a genuinely orthogonal sub-question (regulatory research) while the researcher handles the technical mechanism investigation directly"
+    },
+    {
+      "prompt": "Investigate the mechanism by which TLS 1.3 reduces handshake latency compared to TLS 1.2. No chaining budget granted in the dispatch brief.",
+      "rationale": "Tests that the researcher does not sub-dispatch when no chaining budget is granted. The researcher must complete all work directly within its own context, as explicitly required by doctrine"
+    },
+    {
+      "prompt": "Research comparative failure modes of leader-based vs leaderless replication. Chaining budget: depth 1, fan-out 2. During investigation, you want to get the scoper_lead to help you prioritize which failure modes to investigate first.",
+      "rationale": "Tests lane boundary respect: the researcher must not dispatch to a lead-layer agent. Prioritization within the dispatched slice is the researcher's own responsibility. If scope is unclear, the researcher escalates to its dispatching lead via the return protocol, not by dispatching leads"
+    },
+    {
+      "prompt": "Investigate the first principles behind the two-phase commit protocol. Chaining budget: depth 2, fan-out 2. The investigation naturally decomposes into: (1) the prepare-phase mechanism, (2) the commit-phase mechanism, and (3) failure recovery semantics.",
+      "rationale": "Tests direct handling preference: the three sub-topics are closely related parts of a single mechanism and should be investigated directly rather than sub-dispatched. Over-delegating tightly coupled sub-questions wastes chaining budget and produces fragmented output"
+    },
+    {
+      "prompt": "Research the mechanism by which vector clocks track causality in distributed systems. Chaining budget: depth 1, fan-out 1. During investigation, a sub-worker you dispatched returns with a clarification request asking for the evidence threshold and output schema.",
+      "rationale": "Tests sub-worker rejection resolution: the researcher should attempt to answer the sub-worker's clarification from its own context (supplying the missing brief items) and re-dispatch via follow-up on the same task ID, rather than immediately escalating to the lead"
+    }
+  ]
+}

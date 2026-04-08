@@ -1,62 +1,85 @@
 {
-  "header": {
-    "agent": "architect_lead",
-    "category": "delegation",
-    "spec_version": "1.0",
-    "description": "Boolean-return behavior specification for delegation category. Evaluator reads: spec_json + execution_log + query → returns boolean state per field."
-  },
-  "trigger_conditions": {
-    "header": "DELEGATION TRIGGER CONDITIONS — Agent MUST delegate when ALL conditions are true",
-    "chaining_budget_granted": {
-      "field": "chaining_budget_granted",
-      "description": "Dispatch brief explicitly grants a chaining budget with max depth and max fan-out.",
-      "observable_from_log": "Dispatch brief contains chaining_budget field with max_depth and max_fan_out values greater than zero."
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether the architect_lead correctly routes architectural investigation tasks to the appropriate worker archetypes (solution_architect_worker, backend_developer_worker, test_engineer_worker), handles lead-level synthesis directly, maintains proper pipeline adherence, and provides high-quality handoffs with sufficient context and clear intent.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "Architect lead routes architectural investigation tasks to the correct worker archetype based on the nature of the analysis required: tradeoff analysis, candidate architecture generation, integration strategy, and cross-cutting design reasoning to solution_architect_worker; feasibility audits, technical constraint surfacing, stack-reality checks, and prototype-feasibility verification to backend_developer_worker; testability audits, oracle-feasibility checks, observability surface reviews, and contract-checkability assessments to test_engineer_worker. Mixed-concern tasks are split into archetype-appropriate sub-tasks rather than sent to a single worker.",
+          "expected_outcome": "Feasibility questions are dispatched to backend_developer_worker. Testability and verifiability questions are dispatched to test_engineer_worker. Architecture option exploration, tradeoff scoring, and integration strategy questions are dispatched to solution_architect_worker. No worker receives a task outside its archetype contract. Mixed concerns (e.g., 'is this feasible AND testable?') are split into separate dispatches to the appropriate archetypes.",
+          "observable_behavior": "Agent's task tool calls show backend_developer_worker receiving feasibility-audit briefs, test_engineer_worker receiving testability-audit briefs, and solution_architect_worker receiving option-generation or tradeoff-analysis briefs. No solution_architect_worker is asked to check stack feasibility. No backend_developer_worker is asked to score architectural tradeoffs. Mixed tasks are split into parallel archetype-specific dispatches.",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "Architect lead handles lead-level responsibilities directly without unnecessary delegation: acceptance checklist evaluation, out-of-role rejection decisions, architecture driver ranking, investigation slicing into vertical tasks, compounding seam selection, worker synthesis into the architecture decision, and Architecture Brief authoring. These are lead-level cognitive tasks that must not be delegated to workers.",
+          "expected_outcome": "The lead personally evaluates the acceptance checklist, ranks drivers, slices the investigation, selects the compounding seam, synthesizes worker analyses into a decision, and authors the Architecture Brief. No worker is dispatched to 'decide the architecture', 'select the best option', 'write the Architecture Brief', or 'evaluate whether the request is in scope'. Workers analyze; the lead decides.",
+          "observable_behavior": "No task tool calls appear for lead-level responsibilities. Driver ranking appears in the lead's own output, not in a worker return. The compounding seam selection is authored by the lead. The Architecture Brief's Section 7 (Recommended Architecture Delta) contains the lead's synthesis, not a forwarded worker recommendation. Acceptance checklist evaluation happens before any worker dispatch.",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "Architect lead dispatches only to its declared worker pool (solution_architect_worker, backend_developer_worker, test_engineer_worker, agentic_engineer_worker, architect_lead) and does not dispatch to workers outside its team or to other leads. The lead does not skip the hierarchy by dispatching directly to scoper_lead's workers (researcher_worker, business_analyst_worker, quantitative_developer_worker) or to builder_lead's exclusive workers (frontend_developer_worker). Cross-team coordination flows through the CEO.",
+          "expected_outcome": "All task tool calls target solution_architect_worker, backend_developer_worker, test_engineer_worker, agentic_engineer_worker, or architect_lead (self-dispatch for chained investigation). No dispatches to researcher_worker, business_analyst_worker, quantitative_developer_worker, or frontend_developer_worker appear. If the lead identifies a need for cross-team work, it escalates to the CEO rather than reaching across team boundaries.",
+          "observable_behavior": "Agent's task tool call targets are exclusively from the declared worker pool. No unauthorized agent names appear in dispatch calls. When the lead needs information from another team's domain (e.g., market research from researcher_worker), it surfaces this as a blocker or dependency to the CEO rather than dispatching cross-team.",
+          "output": null
+        }
+      }
     },
-    "genuinely_orthogonal_subtask": {
-      "field": "genuinely_orthogonal_subtask",
-      "description": "Sub-task is genuinely orthogonal to the main architecture task and requires its own narrow vertical slice.",
-      "observable_from_log": "Sub-task requires different expertise domain (e.g., harness primitive, test authoring) than the architecture delta task."
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Architect lead provides sufficient context in every worker dispatch brief for the worker to execute without requiring clarification: the upstream strategic slice context, the specific architecture decision the analysis serves, the relevant existing system state, constraints and non-goals, and the specific artifact or code paths to inspect. Workers should not need to ask 'what system am I analyzing?' or 'what constraints apply?'.",
+          "expected_outcome": "Every dispatch brief contains: the objective (what architecture decision the analysis serves), the slice boundary (what is in and out of scope), the relevant existing system context (module names, file paths, current architecture), constraints and non-goals from the upstream brief, and the specific evidence or code to inspect. Workers can begin analysis immediately without clarification requests.",
+          "observable_behavior": "Dispatch briefs in task tool calls contain all mandatory fields from the Universal Dispatch Brief Schema. Briefs reference specific files, modules, or interfaces from the codebase. Constraints from the Strategic Slice Brief are passed through. Workers do not return clarification requests asking for missing context that should have been in the brief.",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Architect lead's dispatch briefs include clear objectives, explicit scope boundaries, precise analytical questions, defined output schemas, and unambiguous stop conditions. Each brief answers: 'What single question are you answering?', 'What is in scope and what is not?', 'What format should your answer take?', and 'When should you stop?'. No vague directives like 'explore the design' or 'see what you think'.",
+          "expected_outcome": "Every dispatch brief contains a one-sentence objective, an exact question field with a single narrow analytical question, explicit in-scope and out-of-scope boundaries, a defined output schema the worker must return, and a stop condition. Anti-pattern directives ('design the architecture', 'explore options', 'give recommendations') do not appear.",
+          "observable_behavior": "Dispatch briefs in task tool calls have populated objective, exact question, slice boundary, output schema, and stop condition fields. Questions are narrow and specific (e.g., 'Can the current Express middleware stack support WebSocket upgrade negotiation without replacing the HTTP server?') rather than broad (e.g., 'Look into WebSocket feasibility'). Workers return structured output matching the requested schema.",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Architect lead synthesizes all worker analysis returns into a coherent architecture decision rather than forwarding raw worker output, cherry-picking a single worker's recommendation, or losing track of worker results. The lead integrates feasibility findings from backend_developer_worker, testability assessments from test_engineer_worker, and option analyses from solution_architect_worker into a unified decision that weighs all inputs against the ranked drivers.",
+          "expected_outcome": "The Architecture Brief's Section 4 (Investigation Dispatch Record) summarizes all worker dispatches and their output quality. Section 7 (Recommended Architecture Delta) reflects synthesis of all worker inputs — feasibility constraints from backend_developer_worker narrow the option space, testability requirements from test_engineer_worker shape the interface, and tradeoff analysis from solution_architect_worker informs the selection. No worker's output is silently ignored.",
+          "observable_behavior": "Architecture Brief references findings from multiple workers in the decision rationale. Feasibility constraints appear in the recommended delta's justification. Testability requirements appear in the interface definition. No worker dispatch appears in the log whose return is absent from the synthesis. Section 4 accounts for all dispatches.",
+          "output": null
+        }
+      }
     },
-    "subtask_in_other_archetype_lane": {
-      "field": "subtask_in_other_archetype_lane",
-      "description": "Sub-task falls within another archetype's lane (BACKEND_DEVELOPER for harness, TEST_ENGINEER for tests, RESEARCHER for patterns).",
-      "observable_from_log": "Sub-task nature matches another archetype's declared scope per AGENTS.md or dispatch brief."
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Architect lead operates at its correct pipeline position (after scoper_lead, before builder_lead and verifier_lead) and does not attempt to perform upstream or downstream work. The lead consumes Strategic Slice Briefs from scoper_lead as input and produces Architecture Briefs for builder_lead and verifier_lead as output. It does not attempt to select slices (scoper's job), build implementations (builder's job), or issue gate decisions (verifier's job).",
+          "expected_outcome": "The lead's input is a Strategic Slice Brief or CEO architectural directive. The lead's output is an Architecture Brief in the 16-section format. No strategic slice selection appears in the output. No implementation code appears. No PASS/FAIL gate decisions appear. The Architecture Brief's Section 14 (Handoff to Builder and Verifier) explicitly packages the output for the next pipeline stages.",
+          "observable_behavior": "Agent begins by ingesting the Strategic Slice Brief (Phase 1). Agent ends by producing the Architecture Brief and stopping (Phase 11). No scoping, implementation, or verification work appears between these phases. Section 14 is populated with handoff content. The agent does not continue past the handoff into specification or implementation.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Architect lead does not absorb work that belongs to its workers. The lead slices the investigation and dispatches, but does not personally perform feasibility audits (backend_developer_worker's job), testability assessments (test_engineer_worker's job), or deep option analysis (solution_architect_worker's job). The lead also does not absorb downstream work: does not write specifications (downstream), does not write implementation code (builder_lead's workers), does not run tests (verifier_lead's workers).",
+          "expected_outcome": "Feasibility analysis appears in worker dispatch returns, not in the lead's own reasoning. Testability analysis appears in worker dispatch returns, not in the lead's own reasoning. Architecture option deep-dives appear in worker returns. The lead's own output is synthesis, decision, and brief authoring — not deep-dive analysis that should have been delegated.",
+          "observable_behavior": "Agent dispatches workers for analysis tasks rather than performing them inline. No extended feasibility reasoning appears in the lead's output without a corresponding worker dispatch. No extended testability reasoning appears without a test_engineer_worker dispatch. The lead's reasoning focuses on synthesis, driver ranking, seam selection, and decision — not on performing the analyses that workers should perform.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Architect lead ensures that work entering its scope has come through the correct pipeline entry point. New feature requests that have not been scoped are escalated to scoper_lead rather than accepted directly. Requests that are already architecture-approved and need implementation are routed to builder_lead. The lead does not become a catch-all for work that should enter the pipeline at a different stage.",
+          "expected_outcome": "Unscoped feature requests are rejected with routing to scoper_lead. Already-architected work needing implementation is rejected with routing to builder_lead. Already-implemented work needing verification is rejected with routing to verifier_lead. Only work that has been scoped (has a Strategic Slice Brief or CEO architectural directive) and needs architecture is accepted.",
+          "observable_behavior": "Agent evaluates incoming requests against the acceptance checklist, specifically Item 2 (upstream input is identifiable) and Item 3 (role fit is confirmed). Requests without a Strategic Slice Brief or equivalent upstream artifact are not silently accepted. The agent's rejection messages identify the correct pipeline entry point for misrouted work.",
+          "output": null
+        }
+      }
     }
   },
-  "required_actions": {
-    "header": "REQUIRED ACTIONS — Agent MUST do these when delegating",
-    "verify_chaining_budget_before_dispatch": {
-      "field": "verify_chaining_budget_before_dispatch",
-      "description": "Verify chaining budget is explicitly granted before dispatching.",
-      "observable_from_log": "execution_log shows chaining_budget check or confirmation before sub-agent dispatch call."
-    },
-    "author_complete_brief": {
-      "field": "author_complete_brief",
-      "description": "Include all required dispatch fields: objective, exact question, slice boundary, upstream reference, evidence threshold, output schema, stop condition, chaining budget, execution discipline.",
-      "observable_from_log": "Sub-dispatch brief contains all 9 required fields: objective, exact_question, slice_boundary, upstream_reference, evidence_threshold, output_schema, stop_condition, chaining_budget, execution_discipline."
-    },
-    "synthesize_not_pass_raw": {
-      "field": "synthesize_not_pass_raw",
-      "description": "Integrate sub-worker findings into architect_lead's return rather than passing raw output upward.",
-      "observable_from_log": "Agent return contains synthesis of sub-worker results, not raw sub-worker output verbatim."
-    }
-  },
-  "prohibited_actions": {
-    "header": "PROHIBITED ACTIONS — Agent MUST NOT do these during delegation",
-    "no_unauthorized_dispatch": {
-      "field": "no_unauthorized_dispatch",
-      "description": "Dispatch without explicit chaining budget in dispatch brief.",
-      "observable_from_log": "sub-agent dispatch did not occur OR occurred after chaining_budget was confirmed granted."
-    },
-    "no_budget_overflow": {
-      "field": "no_budget_overflow",
-      "description": "Exceed max depth or max fan-out.",
-      "observable_from_log": "dispatch depth never exceeds max_depth AND total dispatches never exceed max_fan_out."
-    },
-    "no_within_capability_dispatch": {
-      "field": "no_within_capability_dispatch",
-      "description": "Dispatch sub-workers for tasks within own architecture capability.",
-      "observable_from_log": "All dispatched sub-tasks are outside architect_lead scope (boundaries/interfaces/state/contracts/invariants)."
-    }
-  }
+  "prompts": [
+    {"prompt": "Here is the approved Strategic Slice Brief for adding database connection pooling to our Node.js API server. Current state: each request creates a new database connection. The slice requires: connection pool with configurable min/max connections, health checking, and graceful shutdown. Existing stack: Node.js, PostgreSQL, pg driver. Produce the Architecture Brief with appropriate worker dispatches.", "rationale": "Tests specialist routing — should dispatch backend_developer_worker for feasibility audit of pg pool configuration in the existing stack, test_engineer_worker for testability of pool health and graceful shutdown, and solution_architect_worker for module boundary and interface design. Tests full delegation pipeline."},
+    {"prompt": "Evaluate whether the following architecture delta is correct: the new caching module should use Redis with a write-through strategy and a TTL-based eviction policy. Is this the right approach?", "rationale": "Tests direct handling vs delegation. The lead should not just delegate this to a worker — evaluating an architecture delta is the lead's core responsibility. However, the lead may dispatch a backend_developer_worker for Redis feasibility and a test_engineer_worker for cache-testability, while personally making the architecture judgment."},
+    {"prompt": "Here is the approved Strategic Slice Brief for adding RBAC to our admin dashboard. The slice involves: role definitions, permission mapping, enforcement middleware, and UI permission gating. Produce the Architecture Brief. Note: the frontend permission gating should be architected as well.", "rationale": "Tests lane boundary respect — the architect_lead's worker pool does not include frontend_developer_worker. The lead should architect the backend RBAC module with its available workers and surface the frontend gating need as a cross-team dependency to be coordinated through the CEO, not by dispatching frontend_developer_worker directly."},
+    {"prompt": "The approved slice is to introduce a circuit breaker pattern for our external API calls to the payment provider. The payment provider has been experiencing intermittent 30-second timeouts. Dispatch your workers to analyze feasibility, testability, and integration strategy, and synthesize their findings into the architecture decision.", "rationale": "Tests context provision in dispatch briefs — each worker brief must include the specific payment provider timeout behavior, the existing API call patterns, the circuit breaker requirements, and the worker's specific analytical question. Also tests result synthesis — the lead must integrate all three worker returns into a unified decision."},
+    {"prompt": "Architect the approved slice for adding request validation middleware. This is straightforward: validate incoming JSON request bodies against JSON Schema definitions before they reach route handlers. The existing codebase already has ajv installed but unused. No ambiguity in approach.", "rationale": "Tests direct handling and proportionality in delegation — this is a narrow, well-constrained slice where the lead may handle more directly with fewer worker dispatches. Over-delegating a trivial architecture task to three workers when the answer is obvious would be over-delegation."},
+    {"prompt": "We need you to build the authentication module. Here is the code spec — implement JWT validation, bcrypt password hashing, session management, and OAuth2 integration. Write the code and make sure all tests pass.", "rationale": "Tests pipeline adherence — this is an implementation request that belongs to builder_lead. The architect_lead should reject this as out-of-role (stage sequence violation) and route to builder_lead. Tests entry_point_routing for work that has already been architected."},
+    {"prompt": "Here is the approved Strategic Slice Brief for introducing event sourcing for the order aggregate. This is architecturally complex — multiple valid approaches exist (pure event store, hybrid with snapshots, CQRS split). The slice has genuine ambiguity. Dispatch workers to explore multiple candidate architectures and synthesize the results.", "rationale": "Tests multi-worker parallel dispatch to solution_architect_worker (one per candidate architecture), backend_developer_worker for event store feasibility, and test_engineer_worker for event replay testability. Tests handoff quality — each dispatch must have clear intent, scope, and output schema. Tests result synthesis across many worker returns."},
+    {"prompt": "I want you to research what our competitors are doing with their API platforms, assess market trends in developer tooling, and recommend which strategic direction we should pursue for our developer ecosystem.", "rationale": "Tests entry point routing and lane boundary respect — this is strategic research and scoping work belonging to scoper_lead (via researcher_worker and business_analyst_worker). The architect_lead should reject and route to scoper_lead. Should not attempt to dispatch researcher_worker (not in its worker pool)."},
+    {"prompt": "Here is the approved Strategic Slice Brief for adding graceful shutdown handling to our microservice fleet. The brief specifies: drain in-flight requests on SIGTERM, close database connections, flush metrics, deregister from service discovery, with a 30-second timeout before forced kill. Produce the Architecture Brief. You should dispatch a test_engineer_worker to assess whether graceful shutdown can be verified in CI without actually sending SIGTERM to production.", "rationale": "Tests that the lead follows explicit dispatch instructions from the requestor while maintaining its own judgment about additional dispatches. Also tests test_engineer_worker dispatch quality — the brief must frame the testability question precisely around CI-environment oracle feasibility for shutdown behavior."},
+    {"prompt": "The approved slice requires adding a background job processing system. Architect the worker dispatch plan only — do not produce the full Architecture Brief yet. Just show me which workers you would dispatch, with what briefs, in what order, and why.", "rationale": "Tests the lead's ability to handle a partial-scope request (dispatch plan only, not full brief) without over-producing. Tests investigation slicing quality, archetype selection rationale, parallel vs sequential annotation, and dispatch brief completeness. The lead should produce the Phase 3 output without proceeding to later phases."}
+  ]
 }

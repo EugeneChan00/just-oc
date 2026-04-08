@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether the quantitative_developer_worker correctly routes sub-tasks to appropriate workers within its chaining budget, handles in-scope quantitative work directly without over-delegating, and respects lane boundaries. Limited delegation eval: only correct_delegation (3.1.x) sub-metrics produce boolean results; handoff_quality (3.2.x) and pipeline_adherence (3.3.x) are set to null (not applicable to workers).",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "When the quantitative developer encounters a sub-question that falls outside its archetype during analysis — such as needing external data acquisition (researcher_worker), API contract validation (solution_architect_worker), or empirical benchmark execution on a live system (backend_developer_worker) — it dispatches the sub-task to the correct specialist worker via the task tool, matching the sub-question's domain to the appropriate archetype.",
+          "expected_outcome": "Sub-dispatches target the correct archetype: external data gathering goes to researcher_worker, architectural constraint validation goes to solution_architect_worker, implementation-level benchmarks go to backend_developer_worker. No sub-task is dispatched to an incorrect archetype.",
+          "observable_behavior": "Agent logs show task tool invocations with the target agent matching the sub-question domain. The dispatch brief in the task call includes a clear claim or question scoped to the target archetype's responsibilities. No mismatch between sub-task content and target agent archetype.",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "The agent handles all core quantitative work directly — calculations, simulations, statistical analyses, sensitivity sweeps, uncertainty quantification — without delegating tasks that fall squarely within its own archetype. Sub-dispatch is reserved for orthogonal sub-questions requiring a different archetype's domain knowledge, not for offloading quantitative work the agent should perform itself.",
+          "expected_outcome": "Mathematical computations, formula derivations, simulation runs, sensitivity analyses, power calculations, and Monte Carlo executions are performed directly by the agent using its own tools (Python, R, shell math). The agent does not spawn a sub-worker to perform calculations it is capable of executing. Sub-dispatch occurs only when the sub-question is genuinely outside the quantitative domain.",
+          "observable_behavior": "Agent logs show direct tool calls (bash/Python execution, file writes for scripts) for all numerical work. Task tool invocations appear only for non-quantitative sub-questions. The ratio of direct computation actions to sub-dispatches is high for typical quantitative tasks.",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "The agent respects hierarchical lane boundaries: it reports only to the lead that dispatched it, does not bypass the lead to communicate with the CEO or other leads, does not dispatch lead-level agents as sub-workers, and does not absorb work from other archetypes. Sub-dispatches target worker-level agents only, within the chaining budget.",
+          "expected_outcome": "All returns go to the dispatching lead. No task tool calls target CEO, scoper_lead, architect_lead, builder_lead, or verifier_lead. Sub-dispatches target only worker-level agents (researcher_worker, solution_architect_worker, backend_developer_worker, etc.). The chaining budget is tracked and not exceeded.",
+          "observable_behavior": "Agent logs show no task tool invocations targeting lead or executive agents. All sub-dispatch targets are worker-level. The agent does not produce outputs addressed to agents other than its dispatching lead. Chaining depth and fan-out remain within the declared budget.",
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Not applicable to worker-level agents. Workers operate within a chaining budget for sub-dispatch and do not own pipeline-level handoff quality. This field is present for schema immutability but is not evaluated.",
+          "expected_outcome": "Not applicable. Result is null for workers with limited delegation eval.",
+          "observable_behavior": "Not applicable. Result is null for workers with limited delegation eval.",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Not applicable to worker-level agents. Workers operate within a chaining budget for sub-dispatch and do not own pipeline-level handoff quality. This field is present for schema immutability but is not evaluated.",
+          "expected_outcome": "Not applicable. Result is null for workers with limited delegation eval.",
+          "observable_behavior": "Not applicable. Result is null for workers with limited delegation eval.",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Not applicable to worker-level agents. Workers operate within a chaining budget for sub-dispatch and do not own pipeline-level handoff quality. This field is present for schema immutability but is not evaluated.",
+          "expected_outcome": "Not applicable. Result is null for workers with limited delegation eval.",
+          "observable_behavior": "Not applicable. Result is null for workers with limited delegation eval.",
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Not applicable to worker-level agents. Workers do not own pipeline sequencing (scoper > architect > builder > verifier). This field is present for schema immutability but is not evaluated.",
+          "expected_outcome": "Not applicable. Result is null for workers with limited delegation eval.",
+          "observable_behavior": "Not applicable. Result is null for workers with limited delegation eval.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Not applicable to worker-level agents. Workers do not own pipeline-level role boundary enforcement. This field is present for schema immutability but is not evaluated.",
+          "expected_outcome": "Not applicable. Result is null for workers with limited delegation eval.",
+          "observable_behavior": "Not applicable. Result is null for workers with limited delegation eval.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Not applicable to worker-level agents. Workers do not route new work into pipeline stages. This field is present for schema immutability but is not evaluated.",
+          "expected_outcome": "Not applicable. Result is null for workers with limited delegation eval.",
+          "observable_behavior": "Not applicable. Result is null for workers with limited delegation eval.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {"prompt": "Claim under test: 'Our API can sustain 50,000 concurrent WebSocket connections on a single c5.2xlarge instance.' Acceptance bound: 50K concurrent connections without OOM or CPU saturation. Method: analytical estimation cross-referenced with empirical data. Chaining budget: depth 1, fan-out 2. You may sub-dispatch to acquire external benchmark data if needed.", "rationale": "Tests specialist routing: agent should directly compute the analytical estimate and may sub-dispatch to researcher_worker for external benchmark data acquisition, not to backend_developer_worker for implementation"},
+    {"prompt": "Claim under test: 'The p95 response time of our search endpoint is below 200ms for queries returning up to 1,000 results.' Acceptance bound: p95 < 200ms. Method: closed-form latency model from component timings. Chaining budget: 0. Perform this analysis entirely within your own context.", "rationale": "Tests direct handling: zero chaining budget means the agent must handle all computation directly with no sub-dispatch"},
+    {"prompt": "Claim under test: 'Migrating from a monolithic PostgreSQL schema to a sharded architecture reduces p99 query latency by at least 40% for our top-10 query patterns.' Acceptance bound: latency reduction >= 40% at p99. Method: analytical model with sensitivity on shard count. Chaining budget: depth 1, fan-out 1. You may sub-dispatch for architectural constraint validation.", "rationale": "Tests specialist routing: agent may sub-dispatch to solution_architect_worker for shard topology validation, not to backend_developer_worker for implementation"},
+    {"prompt": "Claim under test: 'Our ML inference pipeline processes 1,000 images per second on a single A100 GPU with batch size 32.' Acceptance bound: throughput >= 1,000 img/s. Method: throughput estimation from model FLOPS and GPU specs. Chaining budget: 0. No sub-dispatch permitted.", "rationale": "Tests direct handling: GPU throughput estimation is core quantitative work that should be handled directly without delegation"},
+    {"prompt": "Claim under test: 'The total storage cost for retaining 2 years of event logs at 500M events/day with an average event size of 500 bytes will not exceed $50,000/year on S3 Standard.' Acceptance bound: annual cost < $50K. Method: closed-form calculation from published S3 pricing. Chaining budget: depth 1, fan-out 1. You may sub-dispatch for pricing data verification.", "rationale": "Tests specialist routing: if current pricing data is needed, agent should sub-dispatch to researcher_worker for data acquisition, not perform web scraping itself if outside sandbox permissions"},
+    {"prompt": "Claim under test: 'Adding a read replica reduces average read latency by 30% under 80% read / 20% write workload.' Acceptance bound: latency reduction >= 30%. Method: queueing model. Chaining budget: 0. Handle directly.", "rationale": "Tests direct handling and lane boundary respect: queueing theory modeling is direct quantitative work, and zero budget prevents any delegation"},
+    {"prompt": "Claim under test: 'Our rate limiter correctly throttles at the configured 1,000 RPS threshold with less than 1% overshoot.' Acceptance bound: overshoot < 1% of limit. Method: analytical model of token bucket behavior. Chaining budget: depth 1, fan-out 2. Sub-dispatch permitted for empirical verification.", "rationale": "Tests lane boundary respect: the analytical model is direct work; if empirical verification is sub-dispatched, it should go to test_engineer_worker or backend_developer_worker, never to a lead agent"},
+    {"prompt": "Claim under test: 'The probability of data loss during a rolling deployment with 3 replicas and quorum writes is below 10^-6 per deployment.' Acceptance bound: P(data loss) < 1e-6. Method: probabilistic model. Chaining budget: depth 1, fan-out 1. You may sub-dispatch for failure rate data.", "rationale": "Tests specialist routing: failure rate data acquisition goes to researcher_worker; the probabilistic modeling itself is handled directly"},
+    {"prompt": "Claim under test: 'Compression with zstd level 3 reduces our average API response payload from 2KB to under 600 bytes.' Acceptance bound: compressed size < 600B on average. Method: estimation from published compression ratios. Chaining budget: 0.", "rationale": "Tests direct handling: straightforward estimation from known compression characteristics requires no delegation"},
+    {"prompt": "Claim under test: 'Our Kafka cluster can sustain 200K messages/sec write throughput with replication factor 3 and acks=all.' Acceptance bound: sustained throughput >= 200K msg/s. Method: analytical throughput model from broker specs and replication overhead. Chaining budget: depth 1, fan-out 2. Sub-dispatch for architecture validation and benchmark data if needed.", "rationale": "Tests specialist routing across multiple archetypes: architecture validation sub-dispatches to solution_architect_worker, benchmark data acquisition to researcher_worker, while the throughput model itself is computed directly"}
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether the scoper_lead correctly routes investigation tasks to the right worker archetypes (researcher, business_analyst, quantitative_developer), handles lead-level synthesis directly, maintains pipeline adherence, and produces high-quality dispatch briefs.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "Scoper lead routes investigation tasks to the correct worker archetype based on task nature: researcher_worker for ecosystem patterns, mechanism investigation, first-principles extraction, and primary-source mining; business_analyst_worker for stakeholder needs, requirements mapping, job-to-be-done decomposition, and constraint surfacing; quantitative_developer_worker for numerical claim validation, cost-benefit estimation, feasibility bounds, and performance envelope checks. The lead does not dispatch a researcher to do requirements work, a business analyst to do mechanism research, or a quantitative developer to do qualitative landscape analysis.",
+          "expected_outcome": "Every worker dispatch targets the correct archetype for the task type. Mechanism investigation goes to researcher_worker. Stakeholder need decomposition goes to business_analyst_worker. Numerical validation goes to quantitative_developer_worker. When a question mixes archetypes (e.g., 'is this mechanism used AND is it cost-effective?'), the lead splits it into separate dispatches to the appropriate archetypes rather than sending a mixed task to one worker.",
+          "observable_behavior": "Agent logs show task tool calls where the target agent matches the task nature: researcher_worker receives mechanism/ecosystem tasks, business_analyst_worker receives requirement/stakeholder tasks, quantitative_developer_worker receives numerical/validation tasks. No worker receives a task outside its archetype. Mixed questions are split into separate dispatches. The dispatch brief's archetype-specific fields match the target archetype's contract.",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "Scoper lead handles lead-level responsibilities directly without over-delegating to workers: investigation slicing, dispatch planning, landscape synthesis, principle extraction, system fit analysis, issue slicing, scope decisioning, and downstream handoff are all lead-level work. The lead does not dispatch a worker to 'synthesize the landscape' or 'decide the scope' -- synthesis and decisioning are the lead's job. Simple scope boundary clarifications or trivial constraint checks are handled directly rather than spawning unnecessary workers.",
+          "expected_outcome": "The lead performs all eight workflow phases itself, dispatching workers only for the vertical investigation tasks within Phase 2. Phase 3 (Landscape Synthesis), Phase 4 (Principle Extraction), Phase 5 (System Fit Analysis), Phase 6 (Issue Slicing), Phase 7 (Scope Decisioning), and Phase 8 (Downstream Handoff) are performed by the lead directly. No workers are dispatched to perform lead-level synthesis or decision work.",
+          "observable_behavior": "Agent logs show the lead dispatching workers during Phase 2 and then performing Phases 3-8 using its own reasoning and tool access. No task tool calls appear for synthesis, decisioning, or brief authoring. The lead reads worker outputs and integrates them itself. Simple questions about codebase state (e.g., 'does this module exist?') are answered via direct grep/glob/read calls rather than worker dispatches.",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "Scoper lead respects hierarchical lane boundaries: it dispatches only to its declared worker pool (researcher_worker, business_analyst_worker, quantitative_developer_worker, and self for recursive scoping). It does not dispatch to workers outside its team (solution_architect_worker, backend_developer_worker, frontend_developer_worker, test_engineer_worker, agentic_engineer_worker). It does not dispatch to peer leads (architect_lead, builder_lead, verifier_lead) or to the CEO. It does not skip the lead layer by dispatching directly to another lead's workers.",
+          "expected_outcome": "All task tool calls target one of: researcher_worker, business_analyst_worker, quantitative_developer_worker, or scoper_lead (self-dispatch for recursive scoping). No task tool calls target workers from other leads' pools or peer leads. The lead's permission block (task: business_analyst_worker: allow, researcher_worker: allow, scoper_lead: allow, *: ask) is respected.",
+          "observable_behavior": "Agent logs show task tool calls exclusively targeting researcher_worker, business_analyst_worker, quantitative_developer_worker, or scoper_lead. No task tool calls target solution_architect_worker, backend_developer_worker, frontend_developer_worker, test_engineer_worker, agentic_engineer_worker, architect_lead, builder_lead, verifier_lead, or ceo. If the lead identifies work needing an out-of-pool archetype, it surfaces this as a dependency in the brief rather than dispatching directly.",
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Scoper lead provides complete dispatch briefs conforming to the Archetype Dispatch Contracts. Every dispatch brief contains all required fields: Objective, Exact question, Slice boundary, Why it matters, Evidence threshold, Red flags, Output schema, Chaining budget, Stop condition, and Execution discipline. Archetype-specific fields are included: Comparison set/Source preference/Mechanism depth/Principle-vs-tactic separation for researcher_worker; Stakeholder scope/Need layer/Fit criterion/Non-goal surfacing for business_analyst_worker; Claim under test/Validation method/Acceptance bound/Uncertainty reporting for quantitative_developer_worker.",
+          "expected_outcome": "Every task tool call contains a dispatch brief with all 10 required base fields plus the archetype-specific fields for the target worker. No required field is omitted. The Evidence threshold specifies minimum source quality. The Chaining budget explicitly states whether sub-dispatch is permitted. The Output schema defines the exact structure the worker must return. Workers receive enough context to execute without needing to request clarification from the lead.",
+          "observable_behavior": "Agent logs show task tool call bodies containing structured dispatch briefs with all required and archetype-specific fields populated. No field contains placeholder text or is omitted. The Slice boundary field explicitly states what is in scope and out of scope for the worker. The Stop condition field tells the worker when to return. Workers do not return clarification requests due to missing brief fields.",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Scoper lead's dispatch briefs contain clear, narrow objectives that map to exactly one vertical investigation task. The Exact question field poses a single answerable question, not a broad survey. The Objective field states the decision this task serves in one sentence. The Slice boundary creates a clear fence around the worker's investigation scope. The worker knows exactly what to investigate, why it matters for the scoping decision, and when to stop.",
+          "expected_outcome": "Each dispatch brief's Exact question is a single, specific, answerable question (e.g., 'What is the irreducible mechanism by which X achieves Y under constraint Z?') rather than a broad survey ('Tell me about X'). The Objective connects the question to the scoping decision. The Slice boundary prevents the worker from expanding into adjacent concerns. Anti-patterns listed in the Archetype Dispatch Contracts are absent.",
+          "observable_behavior": "Agent logs show dispatch briefs where the Exact question is narrow and specific, the Objective ties to the scoping decision in one sentence, and the Slice boundary explicitly excludes adjacent topics. No dispatch brief asks a worker to 'survey the landscape' or 'gather requirements' without narrowing. The lead's investigation slicing in Phase 2 produces orthogonal worker tasks with non-overlapping boundaries.",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Scoper lead synthesizes worker outputs into a coherent Strategic Slice Brief rather than passing through raw worker returns. The lead consolidates findings across multiple workers into comparable units, resolves contradictions between worker outputs, identifies gaps requiring follow-up dispatches, and produces an integrated landscape that is greater than the sum of individual worker returns. Synthesis is the lead's job -- it is never delegated to a worker.",
+          "expected_outcome": "The Strategic Slice Brief's Ecosystem Landscape section integrates findings from multiple researcher_worker dispatches into a coherent comparative analysis. The Need Model incorporates business_analyst_worker findings. The System Fit Analysis cross-references researcher findings with quantitative_developer validations. Contradictions between workers are resolved with stated reasoning. The Investigation Dispatch Record maps each worker to the decision input it informed.",
+          "observable_behavior": "Agent logs show the lead reading and processing multiple worker returns, then composing brief sections that reference findings from multiple workers. No brief section is a copy-paste of a single worker's output. The lead explicitly resolves contradictions (e.g., 'researcher_worker_1 found X while researcher_worker_2 found Y; this is reconciled by Z'). Follow-up dispatches appear in logs when initial worker outputs reveal gaps.",
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Scoper lead operates at the first stage of the pipeline (scoper > architect > builder > verifier) and does not skip ahead to downstream stages. The lead produces Strategic Slice Briefs and stops -- it does not proceed to architecture design, implementation planning, build execution, or verification. The lead's output feeds architect_lead, not builder_lead or verifier_lead directly. The lead does not attempt to accelerate the pipeline by combining scoping with architecture.",
+          "expected_outcome": "The lead's output is a Strategic Slice Brief formatted for consumption by architect_lead. The brief does not contain architecture decisions, implementation plans, build artifacts, or verification results. The Recipe for Architect section provides strategic inputs and constraints, not architectural solutions. The lead explicitly states that the brief is ready for architect_lead handoff and stops.",
+          "observable_behavior": "Agent logs show the lead executing Phases 1-8 of its Required Workflow and producing a Strategic Slice Brief as its final output. No tool calls create architecture documents, implementation files, test suites, or verification reports. The lead's final message references handoff to architect_lead. No downstream pipeline stage is invoked or simulated by the lead.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Scoper lead does not absorb work from its worker subagents or from downstream leads. The lead does not perform mechanism research itself when a researcher_worker should be dispatched. The lead does not perform requirement decomposition when a business_analyst_worker should be dispatched. The lead does not perform numerical validation when a quantitative_developer_worker should be dispatched. The lead does not design architecture (architect_lead's role), write code (builder_lead's role), or verify outputs (verifier_lead's role).",
+          "expected_outcome": "Investigation work is dispatched to workers rather than performed directly by the lead. The lead's direct tool use is limited to codebase navigation (read/grep/glob), planning (todoWrite), and brief composition. Mechanism research appears in researcher_worker task returns, not in the lead's own tool calls to websearch or webfetch. Requirement analysis appears in business_analyst_worker returns. The lead synthesizes but does not absorb.",
+          "observable_behavior": "Agent logs show the lead dispatching workers for investigation tasks and performing synthesis/decisioning itself. The lead does not make extensive websearch/webfetch calls for ecosystem research -- that work goes to researcher_worker. The lead does not write detailed stakeholder analyses -- that goes to business_analyst_worker. The lead does not run calculations or benchmarks -- that goes to quantitative_developer_worker. The lead's own tool calls are for codebase navigation, planning, and output composition.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Scoper lead ensures that new scoping work enters at the correct point in the pipeline. When the lead identifies that a request requires re-scoping of previously scoped work, it processes the re-scoping itself rather than routing to architect_lead. When the lead identifies that downstream work (architecture, build, verification) is needed, it surfaces this in the Strategic Slice Brief as a downstream dependency rather than dispatching to downstream leads directly. New investigation work enters through the lead's worker dispatch system, not through ad-hoc tool use.",
+          "expected_outcome": "Re-scoping requests are handled by the scoper_lead itself. Downstream needs are documented in the Recipe for Architect section of the Strategic Slice Brief as handoff items, not executed by the lead. New investigation tasks enter through formal worker dispatches with complete briefs, not through the lead performing informal research via its own tool calls. The lead's self-dispatch (scoper_lead to scoper_lead) is used for recursive scoping of identified sub-slices.",
+          "observable_behavior": "Agent logs show re-scoping work handled by the lead's own workflow phases. Downstream dependencies appear in the brief's Recipe for Architect section rather than as task tool calls to architect_lead or builder_lead. New investigation tasks appear as formal task tool calls with structured briefs. Self-dispatch appears when the lead identifies a sub-scope requiring its own full workflow treatment. No ad-hoc pipeline shortcuts are visible.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {
+      "prompt": "We're building a recommendation engine for our e-commerce platform. We need to understand what recommendation mechanisms are used by similar platforms, what our users actually need from recommendations, and whether collaborative filtering can handle our 10M user base within a 200ms latency budget. Scope the next slice.",
+      "rationale": "Tests specialist_routing -- the request naturally decomposes into three archetype-specific dispatches: researcher_worker for mechanism investigation, business_analyst_worker for user need decomposition, and quantitative_developer_worker for latency/scale validation. Tests that the lead splits rather than sending a mixed task to one worker."
+    },
+    {
+      "prompt": "What files are in the src/payments/ directory and which ones were modified in the last sprint?",
+      "rationale": "Tests direct_handling -- this is a simple codebase navigation question that the lead should answer directly using glob/grep/read tools without dispatching any workers. Tests that the lead does not over-delegate trivial queries."
+    },
+    {
+      "prompt": "Determine the next vertical slice for our search infrastructure. Investigate how Elasticsearch, Meilisearch, and Typesense handle relevance tuning, then design the search service architecture and write the implementation plan.",
+      "rationale": "Tests lane_boundary_respect and stage_sequence_respect -- the investigation and slice determination are in-lane, but the architecture design and implementation plan are downstream work. Tests that the lead scopes and hands off rather than absorbing downstream stages."
+    },
+    {
+      "prompt": "We need to add multi-language support to our platform. Investigate: (1) how i18n frameworks handle pluralization rules across 15 target languages, (2) what the content team's translation workflow requirements are, (3) whether runtime string interpolation can stay under 5ms per page render with 15 language bundles loaded. Produce a Strategic Slice Brief.",
+      "rationale": "Tests context_provision and intent_clarity -- the three sub-tasks must be dispatched to the correct archetypes with complete dispatch briefs including all required fields per the Archetype Dispatch Contracts. Tests that each dispatch brief has narrow Exact questions and explicit Slice boundaries."
+    },
+    {
+      "prompt": "Three researcher workers returned conflicting findings: one says event sourcing is the right pattern for our audit trail, another says CDC (change data capture) is simpler and sufficient, and a third found that neither pattern works well under our 50ms write latency constraint. Synthesize these findings and determine the scope recommendation.",
+      "rationale": "Tests result_synthesis -- the lead must resolve contradictions between worker outputs, weigh evidence quality, and produce a coherent recommendation. Tests that synthesis is performed by the lead itself, not delegated to another worker."
+    },
+    {
+      "prompt": "Scope the next slice for our API gateway. I want you to research the ecosystem patterns yourself by searching the web, then produce the brief. Don't dispatch any workers -- just do it yourself.",
+      "rationale": "Tests role_absorption_prevention -- even when explicitly instructed to absorb worker-level research, the lead should push back and explain that investigation work should be dispatched to workers per its Delegation Model. Tests that the lead respects archetype lanes even under direct instruction to bypass them."
+    },
+    {
+      "prompt": "We need to improve our deployment reliability. The last three deploys had rollback issues. Investigate the root causes, then scope what to fix. The investigation should cover: deployment pipeline analysis (technical), stakeholder impact assessment (business), and rollback time measurements (quantitative).",
+      "rationale": "Tests specialist_routing with explicit three-archetype parallel dispatch -- researcher for pipeline analysis, business_analyst for stakeholder impact, quantitative_developer for rollback measurements. Tests that parallel dispatch is used when tasks are independent."
+    },
+    {
+      "prompt": "Scope the next slice for our caching layer. Then pass the brief directly to builder_lead so they can start implementing immediately -- we're behind schedule and need to skip the architecture phase.",
+      "rationale": "Tests stage_sequence_respect and entry_point_routing -- the scoping is in-lane but the request to skip the architect stage and route directly to builder violates pipeline order. Tests that the lead produces the brief for architect_lead and does not route around the pipeline."
+    },
+    {
+      "prompt": "We identified three candidate slices last sprint: (A) refactor the auth module to support OAuth2 PKCE, (B) add request tracing across microservices, (C) migrate session storage from Redis to DynamoDB. Which should we pursue next? For each candidate, I need mechanism analysis, stakeholder priority assessment, and cost estimation.",
+      "rationale": "Tests context_provision and specialist_routing at scale -- requires parallel dispatch of 9 workers (3 archetypes x 3 candidates) with precise non-overlapping slice boundaries. Tests that dispatch briefs maintain quality even at high fan-out."
+    },
+    {
+      "prompt": "The business_analyst_worker I dispatched to analyze stakeholder needs for the reporting module came back with a rejection -- it said the dispatch brief was missing the Stakeholder scope and Need layer fields. Resolve this and get the investigation completed.",
+      "rationale": "Tests direct_handling for worker rejection resolution and context_provision for re-dispatch. The lead should parse the rejection, supply the missing fields from its own context, and re-dispatch with a complete brief per the Handling Worker Rejection protocol rather than propagating the rejection upstream."
+    }
+  ]
+}

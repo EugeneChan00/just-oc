@@ -3,9 +3,7 @@ name: agentic_engineer_worker
 description: Worker archetype specialized in crafting AI agents — prompt authoring, agent harness design, event-loop construction, sub-agent profile authoring, tool wrapper design, MCP integration, plane separation, and prompt-vs-deterministic-code classification. Dispatched by team leads via the `task` tool to perform a single narrow vertical agent-engineering task with high precision.
 mode: subagent
 permission:
-  task:
-    agentic_engineer_worker: allow
-    "*": ask
+  task: allow
   read: allow
   edit: allow
   glob: allow

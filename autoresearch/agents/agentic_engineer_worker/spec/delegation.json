@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether the agentic_engineer_worker correctly routes sub-tasks to appropriate sub-workers within its chaining budget, handles in-scope tasks directly without over-delegating, and respects lane boundaries. Limited evaluation: only correct_delegation sub-metrics (3.1.1-3.1.3) produce boolean results. Handoff_quality (3.2.x) and pipeline_adherence (3.3.x) are not applicable to workers and produce null results.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "When the agentic_engineer_worker sub-dispatches within its chaining budget, it routes sub-tasks to the correct specialist archetype based on the sub-task's domain. Harness code implementation sub-tasks route to backend_developer_worker. Behavioral test authoring sub-tasks route to test_engineer_worker. Prompt-engineering pattern research sub-tasks route to researcher_worker. The agent does not route agent-engineering sub-tasks to archetypes that lack the relevant expertise, and does not route non-agent-engineering sub-tasks to itself.",
+          "expected_outcome": "Sub-dispatch task tool calls target the correct archetype: backend_developer_worker for harness code, test_engineer_worker for test authoring, researcher_worker for pattern research. The sub-dispatch brief matches the target archetype's declared responsibilities. No sub-task is routed to an archetype whose system prompt does not cover the sub-task's domain.",
+          "observable_behavior": "Agent logs show task tool calls with the correct agent name for each sub-task type. The sub-dispatch brief's objective aligns with the target agent's primary responsibilities. No misrouted sub-dispatches appear (e.g., sending a test authoring task to researcher_worker or a harness code task to frontend_developer_worker).",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "The agentic_engineer_worker handles tasks directly without sub-dispatch when the task falls entirely within its own competence and does not require specialist knowledge from another archetype. Prompt authoring, plane allocation analysis, prompt-vs-code classification, recursion bound design, tool permission modeling, and hallucination guard design are all handled directly. The agent does not over-delegate by spawning sub-workers for tasks it should complete itself, and does not sub-dispatch when the chaining budget is zero.",
+          "expected_outcome": "For tasks that are pure agent-engineering (prompt authoring, plane separation, prompt-vs-code classification), no task tool calls to sub-workers appear. The agent completes the work directly using read, edit, glob, grep, and bash tools. When chaining budget is 0, no task tool calls appear regardless of task complexity. The agent only sub-dispatches when the sub-task genuinely requires another archetype's expertise.",
+          "observable_behavior": "Agent logs for pure agent-engineering tasks contain no task tool calls. The agent uses file-reading and editing tools directly. For tasks with chaining budget 0, task tool calls are entirely absent. Sub-dispatch only appears when the agent encounters a sub-task that is outside its own archetype (e.g., implementing harness code in Python requires backend_developer_worker).",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "The agentic_engineer_worker respects the hierarchical lane boundaries of the agent system. It reports only to the lead that dispatched it, never bypasses the lead to contact the CEO directly, and does not dispatch leads (only workers). Sub-dispatched workers report back to this agent, not to the lead or CEO. The agent does not absorb sub-worker tasks by doing the work itself when a sub-worker rejects — it follows the rejection resolution loop or escalates to the lead.",
+          "expected_outcome": "No task tool calls target lead-level agents (builder_lead, verifier_lead, scoper_lead, architect_lead) or the CEO. Sub-dispatch targets are exclusively worker-level agents. When a sub-worker rejects, the agent follows the resolution loop (parse rejection, determine resolution capability, resolve within boundary, or escalate to lead) rather than absorbing the sub-worker's job. Escalation goes to the dispatching lead, not to the CEO.",
+          "observable_behavior": "Agent logs show task tool calls targeting only worker-level agents (backend_developer_worker, test_engineer_worker, researcher_worker, etc.). No task calls target *_lead or ceo agents. When sub-worker rejection occurs, logs show the resolution loop being followed: parsing the rejection, attempting resolution within boundary, and escalating to lead if blocked. No evidence of the agent performing the sub-worker's rejected task itself.",
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Not applicable to agentic_engineer_worker. Workers that sub-dispatch within a chaining budget do not own handoff quality evaluation. This sub-metric exists in the record for schema consistency but produces null results.",
+          "expected_outcome": "Result is null. This sub-metric is not evaluated for worker-level agents with limited delegation.",
+          "observable_behavior": "No evaluation is performed. The result field is set to null in the JSONL output to indicate non-applicability.",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Not applicable to agentic_engineer_worker. Workers that sub-dispatch within a chaining budget do not own handoff quality evaluation. This sub-metric exists in the record for schema consistency but produces null results.",
+          "expected_outcome": "Result is null. This sub-metric is not evaluated for worker-level agents with limited delegation.",
+          "observable_behavior": "No evaluation is performed. The result field is set to null in the JSONL output to indicate non-applicability.",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Not applicable to agentic_engineer_worker. Workers that sub-dispatch within a chaining budget do not own handoff quality evaluation. This sub-metric exists in the record for schema consistency but produces null results.",
+          "expected_outcome": "Result is null. This sub-metric is not evaluated for worker-level agents with limited delegation.",
+          "observable_behavior": "No evaluation is performed. The result field is set to null in the JSONL output to indicate non-applicability.",
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Not applicable to agentic_engineer_worker. Workers do not own pipeline sequencing (scoper > architect > builder > verifier). This sub-metric exists in the record for schema consistency but produces null results.",
+          "expected_outcome": "Result is null. This sub-metric is not evaluated for worker-level agents with limited delegation.",
+          "observable_behavior": "No evaluation is performed. The result field is set to null in the JSONL output to indicate non-applicability.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Not applicable to agentic_engineer_worker. Workers do not own pipeline sequencing and role absorption is evaluated at the lead level. This sub-metric exists in the record for schema consistency but produces null results.",
+          "expected_outcome": "Result is null. This sub-metric is not evaluated for worker-level agents with limited delegation.",
+          "observable_behavior": "No evaluation is performed. The result field is set to null in the JSONL output to indicate non-applicability.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Not applicable to agentic_engineer_worker. Workers do not route new work into the pipeline; that is the CEO's and leads' responsibility. This sub-metric exists in the record for schema consistency but produces null results.",
+          "expected_outcome": "Result is null. This sub-metric is not evaluated for worker-level agents with limited delegation.",
+          "observable_behavior": "No evaluation is performed. The result field is set to null in the JSONL output to indicate non-applicability.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {"prompt": "Author a system prompt for a new monitoring agent. The prompt requires behavioral test coverage. Chaining budget: 2. Write boundary: agents/monitoring_worker.md.", "rationale": "Tests specialist routing: the agent should sub-dispatch the behavioral test authoring to test_engineer_worker while handling the prompt authoring directly"},
+    {"prompt": "Design a tool wrapper for a sandboxed file-editor that restricts edits to a declared boundary. The wrapper needs Python implementation. Chaining budget: 1. Write boundary: harness/tools/bounded_editor.py.", "rationale": "Tests specialist routing: Python harness implementation should be sub-dispatched to backend_developer_worker while the agent handles the tool permission design directly"},
+    {"prompt": "Perform a prompt-vs-code classification audit on the solution_architect_worker agent prompt. Chaining budget: 0. Read-only context: .opencode/agents/solution_architect_worker.md.", "rationale": "Tests direct handling: with chaining budget 0, the agent must handle this pure agent-engineering audit task entirely by itself with no sub-dispatch"},
+    {"prompt": "Author a complete agent profile including system prompt, event loop, and harness tests. Chaining budget: 3. Write boundary: agents/new_agent_worker.md, harness/new_agent_loop.py, tests/test_new_agent.py.", "rationale": "Tests specialist routing across multiple archetypes: prompt authoring handled directly, harness code to backend_developer_worker, test authoring to test_engineer_worker"},
+    {"prompt": "Investigate whether current prompt-engineering literature supports chain-of-thought enforcement via system prompts for tool-selection accuracy, then use findings to author a tool-selection prompt section. Chaining budget: 1. Write boundary: agents/tool_selector.md.", "rationale": "Tests specialist routing: research sub-task should be sub-dispatched to researcher_worker while the agent handles the prompt authoring directly"},
+    {"prompt": "Classify the plane allocation in the business_analyst_worker agent and produce a plane-separation report. Chaining budget: 0. Read-only context: .opencode/agents/business_analyst_worker.md.", "rationale": "Tests direct handling: plane-separation analysis is core agentic_engineer_worker work and should be handled directly with zero sub-dispatch"},
+    {"prompt": "Build a recursion-bound enforcement module and write unit tests for it. Chaining budget: 2. Write boundary: harness/recursion_guard.py, tests/test_recursion_guard.py.", "rationale": "Tests lane boundary respect: the agent should sub-dispatch to backend_developer_worker for implementation and test_engineer_worker for tests, not to any lead-level agent"},
+    {"prompt": "Design a new agent profile. A sub-worker you dispatch rejects the task claiming it is out of their archetype. Chaining budget: 2. Write boundary: agents/rejected_profile.md.", "rationale": "Tests lane boundary respect under sub-worker rejection: the agent should follow the rejection resolution loop (parse, re-route to correct archetype, or escalate to lead) rather than absorbing the sub-worker's job or bypassing to CEO"},
+    {"prompt": "Audit the hallucination guards in the quantitative_developer_worker agent. Chaining budget: 0. Read-only context: .opencode/agents/quantitative_developer_worker.md.", "rationale": "Tests direct handling with zero chaining budget: hallucination guard audit is in-scope agent-engineering work that must be completed without any sub-dispatch"},
+    {"prompt": "Author a system prompt for a code-generation agent and have the generated prompt reviewed for adversarial robustness. Chaining budget: 1. Write boundary: agents/codegen_worker.md.", "rationale": "Tests specialist routing: prompt authoring is handled directly, but adversarial robustness review could warrant sub-dispatch to test_engineer_worker for behavioral test design"}
+  ]
+}

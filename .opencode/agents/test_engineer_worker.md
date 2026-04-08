@@ -3,9 +3,7 @@ name: test_engineer_worker
 description: Worker archetype specialized in red-phase failing test authoring, oracle design, oracle honesty audit, testability assessment, and verification evidence collection. Dispatched by team leads via the `task` tool to perform a single narrow vertical test task with high precision and uncompromising oracle discipline.
 mode: subagent
 permission:
-  task:
-    test_engineer_worker: allow
-    "*": ask
+  task: allow
   read: allow
   edit: allow
   glob: allow

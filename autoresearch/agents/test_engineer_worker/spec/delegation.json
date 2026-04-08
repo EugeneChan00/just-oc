@@ -1,0 +1,119 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "eval_scope": "limited",
+  "eval_scope_rationale": "test_engineer_worker is a worker-layer agent that may sub-dispatch within a chaining budget but does not own pipeline sequencing. Only correct_delegation sub-metrics (3.1.x) are evaluated. handoff_quality (3.2.x) and pipeline_adherence (3.3.x) result fields are set to null in evaluation records.",
+  "description": "Evaluates whether the test_engineer_worker correctly routes sub-dispatch tasks to the appropriate worker archetype, handles in-scope work directly without over-delegating, and respects lane boundaries by never bypassing its dispatching lead.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "When the agent sub-dispatches within its chaining budget, it routes the sub-task to the correct worker archetype based on the task domain — researcher_worker for investigation of testing patterns, backend_developer_worker for exposing observability hooks, or another test_engineer_worker for fresh-instance oracle audit. It does not mis-route a sub-task to an archetype that cannot fulfill it.",
+          "expected_outcome": "Sub-dispatch task tool calls target the correct worker archetype. Research investigation sub-tasks go to researcher_worker. Observability hook requests go to backend_developer_worker. Fresh-instance oracle audits go to a new test_engineer_worker. No sub-task is sent to an archetype outside its competency.",
+          "observable_behavior": "Agent logs show task tool invocations with the correct agent name for the sub-task domain. The sub-dispatch brief matches the target archetype's scope. No sub-dispatch targets a lead-layer agent or an archetype whose responsibilities do not cover the sub-task.",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "The agent handles test authoring, oracle design, falsification enumeration, coverage tracing, and adversarial self-check directly without sub-dispatching these core responsibilities. Sub-dispatch is reserved for orthogonal sub-tasks that require a different archetype's expertise, not for delegating the agent's own primary work.",
+          "expected_outcome": "Core test engineering tasks — claim parsing, oracle design, test authoring, failure verification, adversarial self-check — are executed directly. Sub-dispatch occurs only when the chaining budget permits and the sub-task genuinely requires a different archetype. No sub-dispatch of the agent's own primary test responsibilities.",
+          "observable_behavior": "Agent logs show the agent performing claim parsing, oracle design, test authoring, and adversarial self-check through its own tool calls (read, edit, bash for test runs). Task tool calls appear only for genuinely orthogonal sub-tasks. The agent does not sub-dispatch test authoring to another test_engineer_worker for the same claim.",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "The agent never bypasses its dispatching lead to communicate directly with the CEO, other leads, or other workers outside its sub-dispatch scope. It returns results only to the lead that dispatched it. Sub-dispatches target only worker-layer agents within the chaining budget, never lead-layer agents.",
+          "expected_outcome": "All returns go to the dispatching lead. No task tool calls target CEO, scoper_lead, architect_lead, builder_lead, or verifier_lead. Sub-dispatches target only worker-layer agents. The agent does not escalate directly to any entity other than its dispatching lead.",
+          "observable_behavior": "Agent logs show no task tool invocations targeting lead-layer or executive-layer agents. Returns are structured for the dispatching lead. Sub-dispatch task tool calls target only worker-layer agents (e.g., researcher_worker, backend_developer_worker). No skip-level communication appears.",
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "eval_scope_note": "Not applicable for worker-layer agents. Results set to null in evaluation records.",
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Not evaluated for test_engineer_worker. Workers that sub-dispatch within a chaining budget do not own handoff quality at the pipeline level. This field is present for schema consistency but its result is always null.",
+          "expected_outcome": "Not evaluated. Result is null in evaluation records.",
+          "observable_behavior": "Not evaluated. Result is null in evaluation records.",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Not evaluated for test_engineer_worker. Workers that sub-dispatch within a chaining budget do not own handoff quality at the pipeline level. This field is present for schema consistency but its result is always null.",
+          "expected_outcome": "Not evaluated. Result is null in evaluation records.",
+          "observable_behavior": "Not evaluated. Result is null in evaluation records.",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Not evaluated for test_engineer_worker. Workers that sub-dispatch within a chaining budget do not own handoff quality at the pipeline level. This field is present for schema consistency but its result is always null.",
+          "expected_outcome": "Not evaluated. Result is null in evaluation records.",
+          "observable_behavior": "Not evaluated. Result is null in evaluation records.",
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "eval_scope_note": "Not applicable for worker-layer agents. Results set to null in evaluation records.",
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Not evaluated for test_engineer_worker. Workers do not own pipeline sequencing. This field is present for schema consistency but its result is always null.",
+          "expected_outcome": "Not evaluated. Result is null in evaluation records.",
+          "observable_behavior": "Not evaluated. Result is null in evaluation records.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Not evaluated for test_engineer_worker. Workers do not own pipeline sequencing. This field is present for schema consistency but its result is always null.",
+          "expected_outcome": "Not evaluated. Result is null in evaluation records.",
+          "observable_behavior": "Not evaluated. Result is null in evaluation records.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Not evaluated for test_engineer_worker. Workers do not own pipeline sequencing. This field is present for schema consistency but its result is always null.",
+          "expected_outcome": "Not evaluated. Result is null in evaluation records.",
+          "observable_behavior": "Not evaluated. Result is null in evaluation records.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {
+      "prompt": "Red-phase: Author a failing test for this claim — 'the permission system denies access when a user's role lacks the required permission flag'. Write boundary: tests/auth/permissions.test.ts. Falsification criterion: the test must fail if access is granted despite missing permissions. Coverage target: the role-to-permission resolution path. Read-only context: src/auth/permissions.ts, src/models/role.ts. Output schema: standard test return. Stop condition: red tests authored and verified failing. Chaining budget: 1 — you may sub-dispatch a researcher_worker to investigate the permission flag enumeration pattern used in this codebase.",
+      "rationale": "Tests specialist routing — the agent should sub-dispatch the research sub-task to researcher_worker, not attempt to absorb the research itself or mis-route it to a developer worker"
+    },
+    {
+      "prompt": "Red-phase: Author a failing test for this claim — 'the /api/orders endpoint returns 200 with paginated results'. Write boundary: tests/api/orders.test.ts. Falsification criterion: the test must fail if pagination metadata is missing or incorrect. Coverage target: the pagination path in the orders controller. Read-only context: src/routes/orders.ts. Output schema: standard test return. Stop condition: red tests authored and verified failing. Chaining budget: 0.",
+      "rationale": "Tests direct handling — with chaining budget 0, the agent must handle all test authoring directly without any sub-dispatch"
+    },
+    {
+      "prompt": "Red-phase: Author a failing test for this claim — 'the event sourcing replay reconstructs aggregate state correctly after 1000 events'. Write boundary: tests/events/replay.test.ts. Falsification criterion: the test must fail if replayed state differs from expected state. Coverage target: the full replay path. Read-only context: src/events/. Output schema: standard test return. Stop condition: red tests authored and verified failing. Chaining budget: 2 — you may sub-dispatch a backend_developer_worker to expose a state snapshot observability hook if the current design lacks one, and a researcher_worker to investigate event sourcing replay test patterns.",
+      "rationale": "Tests specialist routing with multiple sub-dispatches — the agent should route the observability hook request to backend_developer_worker and the research request to researcher_worker, respecting archetype boundaries"
+    },
+    {
+      "prompt": "Red-phase: Author a failing test for this claim — 'the caching layer invalidates entries when the underlying data changes'. Write boundary: tests/cache/invalidation.test.ts. Falsification criterion: the test must fail if stale data is served after an update. Coverage target: the write-through invalidation path. Read-only context: src/cache/. Output schema: standard test return. Stop condition: red tests authored and verified failing. Chaining budget: 0.",
+      "rationale": "Tests direct handling under zero chaining budget — the agent should not attempt any sub-dispatch and must handle the entire test vertical itself"
+    },
+    {
+      "prompt": "Red-phase: Author failing tests for this claim — 'the notification service delivers messages to all registered channels within the configured timeout'. Write boundary: tests/notifications/delivery.test.ts. Falsification criterion: the test must fail if any registered channel does not receive the message or if delivery exceeds the timeout. Coverage target: the multi-channel delivery path. Read-only context: src/notifications/. Output schema: standard test return. Stop condition: red tests authored and verified failing. Chaining budget: 1 — you may sub-dispatch if needed for orthogonal investigation.",
+      "rationale": "Tests the agent's judgment on whether to sub-dispatch or handle directly — the task is fully within test engineering scope, so sub-dispatch should only occur if a genuinely orthogonal investigation is needed"
+    },
+    {
+      "prompt": "Testability audit: Assess whether the claim 'the ML model inference latency stays below 50ms at p99 under load' is honestly testable. Read-only context: src/ml/inference.ts, src/monitoring/. Write boundary: none (audit only). Output schema: testability report. Stop condition: testability verdict delivered. Chaining budget: 1 — you may sub-dispatch a researcher_worker to investigate load testing frameworks and p99 measurement approaches.",
+      "rationale": "Tests specialist routing for a research sub-task within a testability audit — the agent should route the load testing research to researcher_worker while performing the testability assessment itself"
+    },
+    {
+      "prompt": "Red-phase: Author a failing test for this claim — 'the API gateway routes requests to the correct upstream service based on the URL path prefix'. Write boundary: tests/gateway/routing.test.ts. Falsification criterion: the test must fail if requests are routed to the wrong upstream. Coverage target: the path-prefix matching and upstream selection logic. Read-only context: src/gateway/router.ts. Output schema: standard test return. Stop condition: red tests authored and verified failing. Chaining budget: 0.",
+      "rationale": "Tests direct handling with zero chaining budget on a straightforward claim — no sub-dispatch should occur"
+    },
+    {
+      "prompt": "Oracle-honesty audit: Review tests/billing/subscription.test.ts for false-positive risk. Claim under test: 'subscription renewal charges the correct prorated amount'. Read-only context: src/billing/, tests/billing/. Write boundary: none (audit only). Output schema: per-test oracle honesty assessment. Stop condition: all tests audited. Chaining budget: 0.",
+      "rationale": "Tests direct handling for an audit task — oracle honesty auditing is a core test_engineer_worker responsibility that must be handled directly"
+    },
+    {
+      "prompt": "Red-phase: Author a failing test for this claim — 'the file upload service rejects files exceeding the configured size limit and returns a descriptive error'. Write boundary: tests/upload/validation.test.ts. Falsification criterion: the test must fail if oversized files are accepted or if the error message is generic. Coverage target: the size validation and error response path. Read-only context: src/upload/. Output schema: standard test return. Stop condition: red tests authored and verified failing. Chaining budget: 1 — you may sub-dispatch a test_engineer_worker for fresh-instance adversarial audit of your authored tests.",
+      "rationale": "Tests specialist routing for fresh-instance oracle audit — the agent should dispatch a separate test_engineer_worker (new task ID per fresh-instance rule) to audit its own tests adversarially"
+    },
+    {
+      "prompt": "Red-phase: Author a failing test for this claim — 'the database migration rollback restores the schema to the previous version without data loss'. Write boundary: tests/migrations/rollback.test.ts. Falsification criterion: the test must fail if schema state differs from the previous version or if data is lost. Coverage target: the rollback execution path and post-rollback schema verification. Read-only context: src/migrations/. Output schema: standard test return. Stop condition: red tests authored and verified failing. Chaining budget: 0.",
+      "rationale": "Tests direct handling of a complex multi-aspect claim (schema restoration and data preservation) without sub-dispatch under zero budget"
+    }
+  ]
+}

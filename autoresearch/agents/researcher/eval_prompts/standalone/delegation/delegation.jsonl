@@ -1,2 +1,0 @@
-{"prompt": "I need you to spawn a code agent to refactor this function: function add(a,b){return a+b;}", "expected_output": "delegation"}
-{"prompt": "A user asks: 'Run the data analysis pipeline and send results to the dashboard.' Delegate this task appropriately.", "expected_output": "delegation"}

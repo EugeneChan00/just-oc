@@ -1,2 +1,0 @@
-{"prompt": "Return a JSON object with keys 'topic', 'findings', and 'sources' for the query: 'impact of climate change on coral reefs'.", "expected_output": "compliance"}
-{"prompt": "Format your research output as: 1) Summary (50 words), 2) Key Points (bullet list), 3) Confidence Score (0-1). Query: quantum computing advances in 2024.", "expected_output": "compliance"}

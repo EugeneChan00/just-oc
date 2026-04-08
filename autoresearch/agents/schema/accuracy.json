@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "category": "accuracy",
+  "description": "Evaluates whether the agent produces factually correct, logically sound, and instruction-compliant responses across diverse query types.",
+  "metrics": {
+    "factual_correctness": {
+      "sub_metrics": {
+        "fact_accuracy": {
+          "description": "Write a description defining what factual accuracy means — agent provides correct facts without hallucination or invented information. Focus on: verifiable claims about facts, dates, numbers, and named entities.",
+          "expected_outcome": "Define what factual accuracy looks like in the response. Agent outputs contain only true factual statements.",
+          "observable_behavior": "Describe what to look for in agent logs that indicates factual accuracy or inaccuracy.",
+          "output": null
+        },
+        "source_citation": {
+          "description": "Write a description defining source citation — agent references authoritative sources when making factual claims. Focus on: citing sources, acknowledging sources, or explicitly stating lack of source.",
+          "expected_outcome": "Define what proper source citation looks like in the response.",
+          "observable_behavior": "Describe observable citation patterns in agent logs.",
+          "output": null
+        },
+        "uncertainty_acknowledgment": {
+          "description": "Write a description defining uncertainty acknowledgment — agent states when information is unknown, beyond capability, or unverifiable. Focus on: 'I don't know', 'I cannot verify', or similar uncertainty signals.",
+          "expected_outcome": "Define what appropriate uncertainty acknowledgment looks like in the response.",
+          "observable_behavior": "Describe how the agent signals uncertainty in agent logs.",
+          "output": null
+        }
+      }
+    },
+    "instruction_following": {
+      "sub_metrics": {
+        "constraint_adherence": {
+          "description": "Write a description defining constraint adherence — agent follows all explicit constraints stated in the prompt. Focus on: format requirements, tone, length limits, and content restrictions.",
+          "expected_outcome": "Define what constraint adherence looks like in the response.",
+          "observable_behavior": "Describe observable constraint-related behavior in agent logs.",
+          "output": null
+        },
+        "scope_completion": {
+          "description": "Write a description defining scope completion — agent completes all parts of multi-part or multi-component requests. Focus on: addressing every sub-task, not stopping early.",
+          "expected_outcome": "Define what full scope completion looks like in the response.",
+          "observable_behavior": "Describe how the agent handles multi-part requests in agent logs.",
+          "output": null
+        },
+        "denied_constraint_respect": {
+          "description": "Write a description defining denied constraint respect — agent does not attempt explicitly denied, prohibited, or out-of-scope actions. Focus on: respecting stated exclusions, not working around limitations.",
+          "expected_outcome": "Define what respecting denied constraints looks like in the response.",
+          "observable_behavior": "Describe how the agent handles prohibited requests or stated exclusions in agent logs.",
+          "output": null
+        }
+      }
+    },
+    "reasoning_quality": {
+      "sub_metrics": {
+        "logical_coherence": {
+          "description": "Write a description defining logical coherence — agent's chain-of-thought is logical and leads to correct conclusions. Focus on: valid inference steps, identified assumptions, and consistent reasoning.",
+          "expected_outcome": "Define what logical coherence looks like in the agent's reasoning.",
+          "observable_behavior": "Describe observable reasoning patterns in agent logs.",
+          "output": null
+        },
+        "fallacy_absence": {
+          "description": "Write a description defining fallacy absence — agent avoids circular reasoning, false dichotomies, strawman arguments, and other logical fallacies. Focus on: no circular logic, no false alternatives presented.",
+          "expected_outcome": "Define what fallacy-free reasoning looks like in the response.",
+          "observable_behavior": "Describe how to detect fallacies in agent reasoning logs.",
+          "output": null
+        },
+        "proportionality": {
+          "description": "Write a description defining proportionality — agent's response depth matches query complexity. Focus on: concise answers for simple queries, thorough analysis for complex ones.",
+          "expected_outcome": "Define what proportionate response depth looks like in the response.",
+          "observable_behavior": "Describe how response length and complexity correlate with query type in agent logs.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {"prompt": "What is the capital of France?", "rationale": "Tests factual recall of geographic information"},
+    {"prompt": "Explain why the sky is blue in 2 sentences", "rationale": "Tests ability to follow format constraint (2 sentences) and explain scientific phenomenon"},
+    {"prompt": "Write a haiku about mountains", "rationale": "Tests creative output with specific structural constraint (5-7-5 syllables)"},
+    {"prompt": "What year did WW2 end?", "rationale": "Tests factual recall of historical date"},
+    {"prompt": "Translate 'hello' to Spanish", "rationale": "Tests simple translation capability"},
+    {"prompt": "Is 17 a prime number? Show your reasoning", "rationale": "Tests mathematical reasoning with explanation requirement"},
+    {"prompt": "What are 3 benefits of exercise?", "rationale": "Tests enumerated list response with specific count constraint"},
+    {"prompt": "Describe the process of photosynthesis", "rationale": "Tests ability to explain complex scientific process"},
+    {"prompt": "What is the current time in Tokyo?", "rationale": "Tests awareness of information limitation (no live data access)"},
+    {"prompt": "Count from 1 to 10 in German", "rationale": "Tests foreign language knowledge with specific sequence"}
+  ]
+}

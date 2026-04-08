@@ -3,10 +3,7 @@ name: verifier_lead
 description: Team lead verification and gatekeeping specialist for stage-appropriate assurance across agent teams. Use when the task is to lead verification efforts to judge whether a current artifact, implementation, architecture move, or evidence package is sufficient to pass, conditionally pass, fail, or block — and to audit the builder team's self-verification for false positives.
 mode: primary
 permission:
-  task:
-    test_engineer_worker: allow
-    verifier_lead: allow
-    "*": ask
+  task: allow
   read: allow
   edit: allow
   glob: allow

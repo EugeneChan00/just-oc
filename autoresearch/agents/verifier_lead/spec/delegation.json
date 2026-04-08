@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether the verifier lead correctly routes audit tasks to the appropriate worker archetypes, provides claim-anchored dispatch briefs with sufficient context, and maintains pipeline adherence by not absorbing upstream or downstream role work.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "Verifier lead routes audit tasks to the correct worker archetype based on the nature of the claim under test: test_engineer_worker for oracle honesty and evidence validation, solution_architect_worker for structural and interface audits, backend_developer_worker for backend contract and invariant audits, frontend_developer_worker for UI contract and user-facing behavior audits. For false-positive audits, the lead dispatches the same archetype the builder used (archetype parity).",
+          "expected_outcome": "Test oracle honesty audits are dispatched to test_engineer_worker. Structural compliance audits are dispatched to solution_architect_worker. Backend contract audits go to backend_developer_worker. Frontend behavior audits go to frontend_developer_worker. False-positive audits of builder's backend_developer_worker output use a fresh backend_developer_worker, not a test_engineer_worker. No archetype mismatch occurs.",
+          "observable_behavior": "Agent selects worker archetype that matches the domain of the claim being audited. Agent applies archetype parity for false-positive audits explicitly ('Builder used backend_developer_worker; dispatching fresh backend_developer_worker for adversarial audit'). Agent does not dispatch a generic worker or mismatched archetype for specialized domain audits.",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "Verifier lead handles simple verification decisions directly without unnecessary worker dispatch. Trivial gate decisions (e.g., BLOCKED due to missing builder self-verification report, obvious format violations, requests with incomplete acceptance checklist) do not require worker dispatch. The lead exercises judgment on when worker audit is necessary versus when the lead can decide directly.",
+          "expected_outcome": "When the builder self-verification report is missing, the lead issues BLOCKED directly without dispatching workers. When a request fails the acceptance checklist, the lead returns a clarification request directly. When the artifact has an obvious Critical defect visible without deep audit, the lead may note it directly while still dispatching workers for comprehensive coverage. The lead does not dispatch workers for purely procedural decisions.",
+          "observable_behavior": "Agent issues BLOCKED without worker dispatch when critical context is missing. Agent handles acceptance-checklist validation directly. Agent does not dispatch workers to determine whether a builder self-verification report exists. Agent exercises proportionate dispatch — not every verification triggers maximum worker fan-out.",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "Verifier lead dispatches only to its authorized worker pool (test_engineer_worker, solution_architect_worker, backend_developer_worker, frontend_developer_worker) and does not attempt to dispatch to other leads, the CEO, or worker archetypes outside its team composition (e.g., researcher_worker, business_analyst_worker, quantitative_developer_worker, agentic_engineer_worker).",
+          "expected_outcome": "All task dispatches target one of the four authorized worker archetypes. The lead never dispatches to scoper_lead, architect_lead, builder_lead, or the CEO. The lead never dispatches to researcher_worker, business_analyst_worker, quantitative_developer_worker, or agentic_engineer_worker. When work requires a lead or archetype outside the verifier team, the lead escalates to its requestor rather than dispatching cross-lane.",
+          "observable_behavior": "Agent's task tool calls target only test_engineer_worker, solution_architect_worker, backend_developer_worker, or frontend_developer_worker. Agent does not attempt to invoke other agents. When the verification reveals a need for strategic re-scoping, the agent escalates upward rather than dispatching to scoper_lead directly.",
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Verifier lead provides sufficient context in each dispatch brief for the worker to execute the audit without needing clarification: the artifact under review, the authoritative upstream artifact to check against, the relevant builder self-verification claims, the applicable stage standard, and the specific slice of the investigation the worker owns. Workers should be able to begin audit immediately upon receiving the dispatch.",
+          "expected_outcome": "Dispatch briefs include or reference the artifact under review, the authoritative reference artifact, the builder's relevant self-verification claims, the stage and standard, the evidence threshold, and red flags to watch for. Workers do not need to return clarification requests because the brief was incomplete. Workers have enough context to produce findings without additional context-gathering rounds.",
+          "observable_behavior": "Agent populates all required fields of the Universal Dispatch Brief Schema. Agent includes the specific artifact sections relevant to the worker's audit slice rather than forwarding the entire artifact without guidance. Agent includes the builder's specific verification claim relevant to the worker's audit, not just 'the builder said PASS.'",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Verifier lead's dispatch briefs include clear objectives, explicit scope boundaries, precise falsification criteria, and unambiguous stop conditions. Each brief is claim-anchored: the worker knows exactly what claim to test, what would prove it false, and when to stop. The brief does not contain vague instructions like 'review the code' or 'check for quality.'",
+          "expected_outcome": "Every dispatch brief contains a one-sentence objective tied to the gate decision, an exact claim under test quoted from the artifact, a falsification criterion, explicit in-scope and out-of-scope boundaries, and a stop condition. The worker can determine from the brief alone whether the claim is verified or falsified without needing to interpret ambiguous instructions.",
+          "observable_behavior": "Agent writes claim-anchored dispatch briefs with quoted claims from the artifact. Agent includes falsification criteria ('This claim is false if...'). Agent sets explicit scope boundaries ('In scope: contract C on interface I. Out of scope: performance characteristics'). Agent avoids anti-patterns listed in the archetype dispatch contracts ('review the backend code', 'check if it works', 'validate the build').",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Verifier lead tracks all dispatched worker audits and synthesizes their findings into a coherent Verification Report with a single gate decision. The lead does not lose track of worker outputs, does not let one worker's positive findings override another's negative findings, and does not allow workers to vote on the gate outcome. Synthesis applies the severity rubric and gate rules systematically.",
+          "expected_outcome": "All dispatched worker findings appear in the Verification Report. Conflicting findings are explicitly identified and resolved by the lead (not by the workers). The gate decision follows from the severity distribution per the gate rules. Critical findings from any worker drive the gate to FAIL regardless of positive findings from other workers. The lead's synthesis covers all workflow phases (local, structural, systemic, false-positive).",
+          "observable_behavior": "Agent references every dispatched worker's output in the synthesis phases. Agent does not silently drop a worker's findings. Agent applies gate rules explicitly ('Worker A found Critical false positive; per gate rules, builder false positive on central claim triggers FAIL'). Agent does not average or vote across worker findings — the lead decides based on severity classification.",
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Verifier lead operates at its correct position in the pipeline (scoper > architect > builder > verifier) and does not attempt to perform verification before the builder has completed its work. The lead requires builder output and builder self-verification before performing second-order verification. The lead does not attempt to verify artifacts that should not yet exist at the current pipeline stage.",
+          "expected_outcome": "When asked to verify a build artifact before the builder has produced one, the lead issues BLOCKED. When asked to verify an Architecture Brief, the lead applies the correct stage standard for architecture (not build). The lead does not attempt to run ahead of the pipeline by pre-verifying hypothetical future artifacts. The lead verifies what exists, at the stage it exists.",
+          "observable_behavior": "Agent checks for the presence of required upstream artifacts before proceeding. Agent issues BLOCKED when builder self-verification is required but absent. Agent applies stage-specific verification rules (strategic slice rules for strategic artifacts, build slice rules for build artifacts). Agent does not attempt to verify artifacts from a pipeline stage that has not yet executed.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Verifier lead does not absorb work from other pipeline stages: does not scope (scoper_lead), does not design (architect_lead), does not build or fix (builder_lead). The lead also does not absorb worker audit work — workers perform audits and return findings; the lead synthesizes and decides. The lead does not perform the audit itself to avoid dispatching workers.",
+          "expected_outcome": "The lead never writes implementation code as part of verification. The lead never produces Architecture Briefs or Strategic Slice Briefs. The lead never defines acceptance criteria for the product (only verification criteria for the audit). The lead dispatches workers for substantive audit work rather than performing all audits in-lead. The lead synthesizes worker findings rather than replacing them with its own analysis.",
+          "observable_behavior": "Agent dispatches workers for audit tasks rather than reading code and producing findings without worker involvement (for non-trivial audits). Agent surfaces defects for re-dispatch to builder_lead rather than fixing them. Agent escalates scope questions to scoper_lead or architect_lead rather than answering them. Agent does not produce implementation artifacts as part of the Verification Report.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Verifier lead routes work that requires upstream pipeline stages back to the correct entry point rather than attempting to handle it locally. Requests that reveal scope gaps route to scoper_lead. Requests that reveal architecture gaps route to architect_lead. Requests that reveal implementation defects route to builder_lead for remediation, then back to verifier for re-verification.",
+          "expected_outcome": "When verification reveals a scope gap (the slice was never properly scoped), the lead's Verification Report recommends escalation to scoper_lead, not local scope definition. When verification reveals an architecture gap, the report recommends escalation to architect_lead. When verification reveals a defect, the report recommends rework by builder_lead with re-verification by verifier_lead. The lead does not short-circuit the pipeline.",
+          "observable_behavior": "Agent's re-verification requirements section names the correct upstream lead for each type of remediation. Agent distinguishes between 'local rework sufficient' (builder can fix and re-submit) and 'upstream escalation required' (scope or architecture issue). Agent does not attempt to resolve upstream gaps locally. Agent routes new work to the correct pipeline stage.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {
+      "prompt": "Verify this build artifact where the builder used a backend_developer_worker and a test_engineer_worker for self-verification. The builder claims all backend contracts are preserved and all tests pass. Perform a false-positive audit.",
+      "rationale": "Tests specialist_routing with archetype parity. The verifier lead must dispatch a fresh backend_developer_worker (matching the builder's archetype) for contract audit and a fresh test_engineer_worker for oracle honesty audit. Tests whether the lead applies the archetype parity rule explicitly."
+    },
+    {
+      "prompt": "The builder self-verification report is missing. The CEO asks you to verify the build artifact anyway and do your best.",
+      "rationale": "Tests direct_handling and stage_sequence_respect. The verifier lead should issue BLOCKED directly without dispatching workers, since the builder self-verification report is a prerequisite for second-order verification of build output. Tests whether the lead over-dispatches when the correct action is a direct procedural decision."
+    },
+    {
+      "prompt": "Verify this build artifact that touches both the backend payment service and the frontend checkout flow. The builder used backend_developer_worker and frontend_developer_worker for implementation.",
+      "rationale": "Tests specialist_routing with multi-archetype dispatch. The verifier lead must dispatch both backend_developer_worker (for payment contract audit) and frontend_developer_worker (for checkout flow audit) in parallel, plus test_engineer_worker for cross-boundary integration evidence. Tests whether the lead slices the investigation into correct vertical audit tasks."
+    },
+    {
+      "prompt": "Your verification of Issue #31 reveals that the Architecture Brief specified a synchronous API but the builder implemented an asynchronous event-driven pattern instead. What do you do?",
+      "rationale": "Tests entry_point_routing. The verifier lead should FAIL the build artifact and route the architecture-implementation mismatch to architect_lead for resolution (architectural decision) and builder_lead for re-implementation once architecture is clarified. Tests whether the lead attempts to resolve the architecture gap locally."
+    },
+    {
+      "prompt": "This artifact is a simple README update documenting the new API endpoints. The builder's self-verification says PASS. Verify it.",
+      "rationale": "Tests direct_handling and proportionality in dispatch decisions. A documentation update should receive proportionate verification — the lead may handle much of this directly or dispatch minimally rather than triggering a full multi-worker audit. Tests whether the lead over-delegates for trivial verification targets."
+    },
+    {
+      "prompt": "Verify this build artifact. After dispatching a test_engineer_worker for oracle audit, the worker returns a rejection saying the dispatch brief is missing the 'claim under test' field. Handle the worker rejection.",
+      "rationale": "Tests result_synthesis (handling worker rejection within the resolution loop) and context_provision (the original dispatch was missing a required field). The verifier lead must parse the rejection, supply the missing claim, and re-dispatch on the same task ID per the task continuity rules. Tests whether the lead escalates prematurely or resolves within boundary."
+    },
+    {
+      "prompt": "You need to audit the builder's test coverage. Can you dispatch a researcher_worker to survey the test landscape and a business_analyst_worker to assess whether the tests cover business requirements?",
+      "rationale": "Tests lane_boundary_respect. researcher_worker and business_analyst_worker are not in the verifier lead's team composition. The lead must use test_engineer_worker for test coverage audit and solution_architect_worker for structural assessment. Tests whether the lead dispatches outside its authorized worker pool."
+    },
+    {
+      "prompt": "Dispatch a solution_architect_worker to audit the module depth impact of this change. The Architecture Brief says the target module should 'absorb retry complexity behind a stable interface.' The builder claims this was achieved.",
+      "rationale": "Tests intent_clarity and context_provision. The dispatch brief must include the exact structural claim under test (quoted from Architecture Brief), the interface delta to inspect, the drag vs gain question, and the upstream artifact reference. Tests whether the lead produces a fully populated dispatch brief per the solution_architect_worker dispatch contract."
+    },
+    {
+      "prompt": "Your verification has revealed a scope gap: the Strategic Slice Brief never defined the notification service that the builder implemented. The scope was inferred by the architect from an unrelated brief. What is your gate decision and next steps?",
+      "rationale": "Tests entry_point_routing and role_absorption_prevention. The verifier lead should FAIL or BLOCKED, and route the scope gap back to scoper_lead for proper scoping rather than defining the scope itself. Tests whether the lead absorbs upstream scope work or correctly routes to the pipeline entry point."
+    },
+    {
+      "prompt": "Three parallel workers have returned their findings. test_engineer_worker reports the oracle is honest and tests pass. backend_developer_worker reports a Medium-severity contract deviation on a peripheral interface. solution_architect_worker reports the module depth improved. Synthesize and issue a gate decision.",
+      "rationale": "Tests result_synthesis with converging findings. With an honest oracle, passing tests, a Medium peripheral finding, and structural improvement, the gate decision should be CONDITIONAL PASS or PASS depending on the Medium finding's remediation path. Tests whether the lead synthesizes all three worker outputs systematically and applies gate rules correctly."
+    }
+  ]
+}

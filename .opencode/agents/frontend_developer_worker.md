@@ -3,9 +3,7 @@ name: frontend_developer_worker
 description: Worker archetype specialized in user-interface implementation, component-contract preservation, user-facing behavior verification, and frontend-backend integration touchpoint reasoning. Dispatched by team leads via the `task` tool to perform a single narrow vertical frontend task with high precision and strict write-boundary respect.
 mode: subagent
 permission:
-  task:
-    frontend_developer_worker: allow
-    "*": ask
+  task: allow
   read: allow
   edit: allow
   glob: allow

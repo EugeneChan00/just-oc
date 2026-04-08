@@ -3,11 +3,7 @@ name: scoper_lead
 description: Team lead strategic scoping specialist for choosing the next high-leverage issue-sized vertical slice. Use when the task is to decide what should be built next, what is in scope now, what should be deferred, and what module or boundary the current issue should deepen.
 mode: primary
 permission:
-  task:
-    business_analyst_worker: allow
-    researcher_worker: allow
-    scoper_lead: allow
-    "*": ask
+  task: allow
   read: allow
   edit: allow
   glob: allow

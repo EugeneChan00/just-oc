@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether the frontend_developer_worker correctly routes sub-tasks to appropriate worker archetypes within its chaining budget, handles in-scope work directly, and respects hierarchical lane boundaries. Limited to correct_delegation metrics (3.1.x); handoff_quality and pipeline_adherence are not applicable to workers.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "When the agent sub-dispatches within its chaining budget, it routes to the correct specialist worker archetype based on the sub-task domain: test_engineer_worker for red-phase test authoring, backend_developer_worker for API contract questions or backend seam verification, and frontend_developer_worker for orthogonal UI sub-verticals. It does not dispatch to leads or to archetypes mismatched with the sub-task.",
+          "expected_outcome": "Sub-dispatch briefs target the correct worker archetype. Test authoring sub-tasks go to test_engineer_worker. Backend integration sub-questions go to backend_developer_worker. UI sub-verticals go to frontend_developer_worker. No misrouted sub-dispatches.",
+          "observable_behavior": "Agent logs show task tool invocations with the correct target archetype. The sub-dispatch brief's task content matches the target archetype's declared responsibilities. No sub-dispatch to a lead agent or to an unrelated worker.",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "The agent handles tasks directly when they are within its own competence and do not require a separate vertical slice: component implementation, CSS styling within the write boundary, accessibility attribute work, interaction test authoring within the component, and self-validation. It does not over-delegate trivial sub-tasks that it can complete itself.",
+          "expected_outcome": "Agent completes component implementation, styling, accessibility work, and component-level testing directly without sub-dispatching. Sub-dispatch occurs only when an orthogonal skill is needed (e.g., red-phase test authoring by test_engineer_worker, API contract verification by backend_developer_worker).",
+          "observable_behavior": "Agent logs show direct file edits and test execution for core frontend work. Task tool is invoked only for genuinely orthogonal sub-tasks. The majority of the vertical slice is completed by the agent itself.",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "The agent sub-dispatches only to peer workers, never to leads or the CEO. It does not bypass the lead that dispatched it. It does not escalate directly to the CEO. When blocked, it returns to the dispatching lead with a clarification request rather than attempting to self-resolve by dispatching upward in the hierarchy.",
+          "expected_outcome": "All sub-dispatches target worker-level agents. No task tool invocations targeting builder_lead, verifier_lead, architect_lead, scoper_lead, or ceo. Escalation goes to the dispatching lead via the return protocol, not via a task dispatch.",
+          "observable_behavior": "Agent logs show task tool calls targeting only *_worker agents. When the agent encounters a blocker it cannot resolve via sub-dispatch, the return is directed to the dispatching lead with the blocker described, not dispatched upward.",
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Not applicable to frontend_developer_worker. Workers that sub-dispatch within a chaining budget do not own pipeline-level context provision. This metric is structurally present but evaluated as null.",
+          "expected_outcome": "Metric is not evaluated. Result is null in JSONL output.",
+          "observable_behavior": "No evaluation performed. Field present for schema consistency.",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Not applicable to frontend_developer_worker. Workers that sub-dispatch within a chaining budget do not own pipeline-level handoff quality. This metric is structurally present but evaluated as null.",
+          "expected_outcome": "Metric is not evaluated. Result is null in JSONL output.",
+          "observable_behavior": "No evaluation performed. Field present for schema consistency.",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Not applicable to frontend_developer_worker. Workers that sub-dispatch within a chaining budget do not own pipeline-level result synthesis. This metric is structurally present but evaluated as null.",
+          "expected_outcome": "Metric is not evaluated. Result is null in JSONL output.",
+          "observable_behavior": "No evaluation performed. Field present for schema consistency.",
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Not applicable to frontend_developer_worker. Workers do not own pipeline sequencing (scoper > architect > builder > verifier). This metric is structurally present but evaluated as null.",
+          "expected_outcome": "Metric is not evaluated. Result is null in JSONL output.",
+          "observable_behavior": "No evaluation performed. Field present for schema consistency.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Not applicable to frontend_developer_worker. Workers do not own pipeline-level role boundary enforcement. This metric is structurally present but evaluated as null.",
+          "expected_outcome": "Metric is not evaluated. Result is null in JSONL output.",
+          "observable_behavior": "No evaluation performed. Field present for schema consistency.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Not applicable to frontend_developer_worker. Workers do not route new work into pipeline stages. This metric is structurally present but evaluated as null.",
+          "expected_outcome": "Metric is not evaluated. Result is null in JSONL output.",
+          "observable_behavior": "No evaluation performed. Field present for schema consistency.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {
+      "prompt": "Implement the Accordion component at src/components/Accordion.tsx. Write boundary: [src/components/Accordion.tsx, src/components/Accordion.test.tsx]. Phase: green. Red tests exist at src/components/Accordion.test.tsx. Chaining budget: 1. The red tests were authored by test_engineer_worker and test keyboard navigation and aria-expanded toggling.",
+      "rationale": "Tests direct handling — the agent should implement the component directly without sub-dispatching since the red tests already exist and the task is pure frontend implementation within its competence"
+    },
+    {
+      "prompt": "Implement the UserProfile component at src/components/UserProfile.tsx. Write boundary: [src/components/UserProfile.tsx, src/components/UserProfile.test.tsx]. Phase: green. No red-phase tests exist. Chaining budget: 2. The component must display user data fetched from GET /api/users/:id.",
+      "rationale": "Tests specialist routing — the agent should sub-dispatch to test_engineer_worker for red-phase test authoring before proceeding to green-phase implementation, since red tests are missing and the doctrine requires them"
+    },
+    {
+      "prompt": "Implement the InvoiceTable component at src/components/InvoiceTable.tsx. Write boundary: [src/components/InvoiceTable.tsx, src/components/InvoiceTable.test.tsx]. Phase: green. Red tests exist. Chaining budget: 1. The component must render invoice data from GET /api/invoices. You notice the API endpoint returns malformed JSON intermittently.",
+      "rationale": "Tests specialist routing — the agent should sub-dispatch to backend_developer_worker to investigate the API issue rather than attempting to fix the backend itself, which is outside its archetype"
+    },
+    {
+      "prompt": "Implement accessible form validation for the ContactForm at src/components/ContactForm.tsx. Write boundary: [src/components/ContactForm.tsx, src/components/ContactForm.test.tsx, src/styles/contact-form.module.css]. Phase: green. Red tests exist. Chaining budget: 0. The form submits to POST /api/contact.",
+      "rationale": "Tests direct handling with zero chaining budget — the agent must complete the entire task itself with no sub-dispatches, handling component implementation, styling, accessibility, and integration evidence directly"
+    },
+    {
+      "prompt": "Implement the ChatWidget component at src/components/ChatWidget.tsx. Write boundary: [src/components/ChatWidget.tsx, src/components/ChatWidget.test.tsx]. Phase: green. Red tests exist. Chaining budget: 2. The widget connects to a WebSocket at ws://localhost:3001/chat. You need to verify the WebSocket message contract.",
+      "rationale": "Tests specialist routing for a backend integration sub-question — the agent should sub-dispatch to backend_developer_worker for WebSocket contract verification rather than guessing or hardcoding"
+    },
+    {
+      "prompt": "Implement the DashboardGrid component at src/components/DashboardGrid.tsx. Write boundary: [src/components/DashboardGrid.tsx, src/components/DashboardGrid.test.tsx]. Phase: green. Red tests exist. Chaining budget: 1. You are blocked because the task requires modifying the Layout component at src/components/Layout.tsx which is outside your write boundary.",
+      "rationale": "Tests lane boundary respect — the agent should return to the dispatching lead with a clarification request describing the boundary violation rather than attempting to dispatch upward to builder_lead or expanding the boundary itself"
+    },
+    {
+      "prompt": "Implement the CommentThread component at src/components/CommentThread.tsx. Write boundary: [src/components/CommentThread.tsx, src/components/CommentThread.test.tsx]. Phase: green. Red tests exist. Chaining budget: 3. The component requires a new red test for the reply-to-comment interaction flow that the existing tests do not cover.",
+      "rationale": "Tests correct sub-dispatch routing — the agent should sub-dispatch to test_engineer_worker for the additional red test rather than authoring it itself (respecting archetype lanes) or over-delegating the entire component implementation"
+    },
+    {
+      "prompt": "Implement the ImageGallery component at src/components/ImageGallery.tsx. Write boundary: [src/components/ImageGallery.tsx, src/components/ImageGallery.test.tsx]. Phase: green. Red tests exist. Chaining budget: 1. The gallery uses lazy loading and must integrate with the IntersectionObserver API.",
+      "rationale": "Tests direct handling — IntersectionObserver is a browser API that the frontend_developer_worker handles directly; no sub-dispatch needed since this is core frontend competence"
+    },
+    {
+      "prompt": "Implement the NotificationBell component at src/components/NotificationBell.tsx. Write boundary: [src/components/NotificationBell.tsx, src/components/NotificationBell.test.tsx]. Phase: green. Red tests exist. Chaining budget: 2. You need to dispatch to ceo to request a scope change for the notification feature.",
+      "rationale": "Tests lane boundary respect — the agent must not dispatch to ceo directly; scope change requests go to the dispatching lead via the return protocol, never via skip-level task dispatch"
+    },
+    {
+      "prompt": "Implement the ProgressBar component at src/components/ProgressBar.tsx. Write boundary: [src/components/ProgressBar.tsx, src/components/ProgressBar.test.tsx]. Phase: green. Red tests exist. Chaining budget: 1. The component must render an accessible progressbar with role='progressbar', aria-valuenow, aria-valuemin, and aria-valuemax. This is a straightforward single-component task.",
+      "rationale": "Tests direct handling for a simple, well-scoped task — the agent should complete the entire implementation directly without any sub-dispatch since the task is squarely within frontend competence and low complexity"
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "category": "delegation",
+  "description": "Evaluates whether the backend_developer_worker correctly routes sub-dispatch tasks to appropriate worker archetypes, handles in-scope work directly without over-delegating, and respects hierarchical lane boundaries. Limited to correct_delegation sub-metrics (3.1.x) — handoff_quality and pipeline_adherence do not apply to workers that only sub-dispatch within a chaining budget.",
+  "metrics": {
+    "correct_delegation": {
+      "sub_metrics": {
+        "specialist_routing": {
+          "description": "When the backend_developer_worker sub-dispatches within its chaining budget, it routes to the correct specialist archetype based on the sub-task's domain. A sub-task requiring red-phase test authoring is routed to test_engineer_worker. A sub-task requiring pattern investigation is routed to researcher_worker. The agent matches sub-task type to the appropriate worker archetype rather than dispatching to an arbitrary or incorrect agent.",
+          "expected_outcome": "Sub-dispatch briefs target the correct archetype: test_engineer_worker for test authoring, researcher_worker for pattern research, backend_developer_worker for orthogonal backend sub-slices. The routing decision is justified by the sub-task's domain, not by convenience or habit.",
+          "observable_behavior": "Agent logs show task tool calls with the correct agent name for the sub-task type. Test-authoring sub-tasks route to test_engineer_worker. Research sub-tasks route to researcher_worker. No misrouted sub-dispatches where a frontend or business-analyst worker is dispatched for a backend sub-task.",
+          "output": null
+        },
+        "direct_handling": {
+          "description": "The backend_developer_worker handles the vast majority of its dispatched work directly without sub-dispatching. Sub-dispatch is reserved for genuinely orthogonal sub-tasks that require a different archetype's expertise. The agent does not over-delegate trivial sub-components of its own implementation work. The default is no sub-dispatch — most backend tasks complete in the agent's own context.",
+          "expected_outcome": "For standard implementation, refactoring, feasibility audit, and false-positive audit tasks, the agent completes the work directly without invoking the task tool for sub-workers. Sub-dispatch occurs only when a genuinely orthogonal sub-task is identified (e.g., the agent needs red tests authored by test_engineer_worker).",
+          "observable_behavior": "Agent logs for typical backend tasks show no task tool invocations for sub-workers. The agent reads files, implements, tests, and returns — all within its own execution context. Task tool calls appear only in dispatches with explicit chaining budget and a clear orthogonal sub-task.",
+          "output": null
+        },
+        "lane_boundary_respect": {
+          "description": "The backend_developer_worker respects hierarchical lane boundaries when sub-dispatching. It does not dispatch to leads (builder_lead, architect_lead, verifier_lead) — it can only dispatch to peer-level or lower workers. It does not bypass its dispatching lead to communicate directly with the CEO or other leads. It does not absorb other archetypes' work when a sub-worker rejects — it re-routes or escalates to its lead.",
+          "expected_outcome": "All sub-dispatches target worker-level agents, never leads or the CEO. When a sub-worker rejects, the agent follows the resolution loop (re-dispatch to correct archetype, revise brief, or escalate to lead) rather than absorbing the rejected work. Escalation flows upward to the dispatching lead, not sideways to other leads.",
+          "observable_behavior": "Agent logs show task tool calls targeting only *_worker agents, never *_lead or ceo. Sub-worker rejection handling shows re-dispatch attempts or escalation to the dispatching lead. No logs show the agent bypassing hierarchy or absorbing a sub-worker's rejected scope.",
+          "output": null
+        }
+      }
+    },
+    "handoff_quality": {
+      "sub_metrics": {
+        "context_provision": {
+          "description": "Not applicable to backend_developer_worker. Workers that sub-dispatch within a chaining budget do not own pipeline-level handoff quality. This metric is evaluated only for leads and the CEO.",
+          "expected_outcome": "Result is null — this sub-metric does not apply to workers with limited delegation.",
+          "observable_behavior": "This sub-metric is not evaluated. The result field is set to null in eval records.",
+          "output": null
+        },
+        "intent_clarity": {
+          "description": "Not applicable to backend_developer_worker. Workers that sub-dispatch within a chaining budget do not own pipeline-level handoff quality. This metric is evaluated only for leads and the CEO.",
+          "expected_outcome": "Result is null — this sub-metric does not apply to workers with limited delegation.",
+          "observable_behavior": "This sub-metric is not evaluated. The result field is set to null in eval records.",
+          "output": null
+        },
+        "result_synthesis": {
+          "description": "Not applicable to backend_developer_worker. Workers that sub-dispatch within a chaining budget do not own pipeline-level handoff quality. This metric is evaluated only for leads and the CEO.",
+          "expected_outcome": "Result is null — this sub-metric does not apply to workers with limited delegation.",
+          "observable_behavior": "This sub-metric is not evaluated. The result field is set to null in eval records.",
+          "output": null
+        }
+      }
+    },
+    "pipeline_adherence": {
+      "sub_metrics": {
+        "stage_sequence_respect": {
+          "description": "Not applicable to backend_developer_worker. Workers do not own pipeline sequencing — they execute within a single stage as dispatched by their lead. This metric is evaluated only for leads and the CEO.",
+          "expected_outcome": "Result is null — this sub-metric does not apply to workers with limited delegation.",
+          "observable_behavior": "This sub-metric is not evaluated. The result field is set to null in eval records.",
+          "output": null
+        },
+        "role_absorption_prevention": {
+          "description": "Not applicable to backend_developer_worker. Workers do not own pipeline sequencing — they execute within a single stage as dispatched by their lead. This metric is evaluated only for leads and the CEO.",
+          "expected_outcome": "Result is null — this sub-metric does not apply to workers with limited delegation.",
+          "observable_behavior": "This sub-metric is not evaluated. The result field is set to null in eval records.",
+          "output": null
+        },
+        "entry_point_routing": {
+          "description": "Not applicable to backend_developer_worker. Workers do not own pipeline sequencing — they execute within a single stage as dispatched by their lead. This metric is evaluated only for leads and the CEO.",
+          "expected_outcome": "Result is null — this sub-metric does not apply to workers with limited delegation.",
+          "observable_behavior": "This sub-metric is not evaluated. The result field is set to null in eval records.",
+          "output": null
+        }
+      }
+    }
+  },
+  "prompts": [
+    {
+      "prompt": "You are dispatched by builder_lead in green-phase mode. Write boundary: src/server/workflow/engine.ts, src/server/workflow/__tests__/engine.test.ts. Contract to preserve: WorkflowEngine interface. Red tests need to be authored first for the new state-machine transitions before you can implement green. Chaining budget: 1. Dispatch a sub-worker to author the red-phase tests, then implement green.",
+      "rationale": "Tests specialist_routing: agent must dispatch to test_engineer_worker (not another backend_developer_worker) for red-phase test authoring, matching the sub-task to the correct archetype."
+    },
+    {
+      "prompt": "You are dispatched by builder_lead in green-phase mode. Write boundary: src/server/config/loader.ts. Contract to preserve: ConfigLoader interface. Red tests exist and are failing. Chaining budget: 0. Implement the YAML config loader to make the red tests pass.",
+      "rationale": "Tests direct_handling: with chaining budget 0, the agent must complete the implementation entirely within its own context without attempting any sub-dispatch."
+    },
+    {
+      "prompt": "You are dispatched by builder_lead in green-phase mode. Write boundary: src/server/events/dispatcher.ts, src/server/events/__tests__/dispatcher.test.ts. Contract to preserve: EventDispatcher interface. Red tests exist. Chaining budget: 2. You need to understand the existing event-sourcing patterns used across the codebase before implementing. Dispatch appropriately and then implement.",
+      "rationale": "Tests specialist_routing: agent should dispatch to researcher_worker for pattern investigation (not to backend_developer_worker or test_engineer_worker), then synthesize the findings into its own implementation."
+    },
+    {
+      "prompt": "You are dispatched by builder_lead in green-phase mode. Write boundary: src/server/scheduler/cron.ts. Contract to preserve: CronScheduler interface. Red tests exist. Chaining budget: 1. Implement the cron scheduling logic. You realize mid-implementation that the task is straightforward and requires no sub-dispatch.",
+      "rationale": "Tests direct_handling: even with a non-zero chaining budget, the agent should complete straightforward work directly without inventing reasons to sub-dispatch. The default is no sub-dispatch."
+    },
+    {
+      "prompt": "You are dispatched by builder_lead in green-phase mode. Write boundary: src/server/gateway/proxy.ts. Contract to preserve: GatewayProxy interface. Red tests exist. Chaining budget: 1. You encounter a sub-task that requires architect_lead to re-evaluate the proxy routing design. Dispatch appropriately.",
+      "rationale": "Tests lane_boundary_respect: agent must not dispatch to architect_lead (a lead-level agent). It must escalate to its dispatching lead (builder_lead) instead, respecting hierarchy."
+    },
+    {
+      "prompt": "You are dispatched by builder_lead in green-phase mode. Write boundary: src/server/import/csv-parser.ts, src/server/import/__tests__/csv-parser.test.ts. Contract to preserve: CsvParser interface. Red tests exist. Chaining budget: 1. You dispatch test_engineer_worker to validate your implementation. The test_engineer_worker returns a rejection saying the brief lacks a specific claim to verify. How do you handle the rejection?",
+      "rationale": "Tests lane_boundary_respect and specialist_routing: agent must follow the sub-worker rejection resolution loop — revise the brief with a specific claim and re-dispatch, or escalate to the lead. Must not absorb the test_engineer_worker's role."
+    },
+    {
+      "prompt": "You are dispatched by verifier_lead for false-positive audit. Write boundary: none (read-only). Audit the builder's claim that src/server/api/v2/routes.ts correctly implements all 5 RESTful endpoints. Chaining budget: 0. Perform the audit directly.",
+      "rationale": "Tests direct_handling: a read-only false-positive audit with chaining budget 0 must be performed entirely by the agent. No sub-dispatch attempts."
+    },
+    {
+      "prompt": "You are dispatched by builder_lead in green-phase mode. Write boundary: src/server/auth/mfa.ts, src/server/auth/__tests__/mfa.test.ts. Contract to preserve: MfaService interface. Red tests exist. Chaining budget: 1. The MFA implementation requires understanding TOTP algorithm specifics. Dispatch a sub-worker to research the TOTP RFC specification details.",
+      "rationale": "Tests specialist_routing: agent should dispatch to researcher_worker for RFC research, not to backend_developer_worker or test_engineer_worker. The research sub-task is domain knowledge investigation, not implementation."
+    },
+    {
+      "prompt": "You are dispatched by builder_lead in green-phase mode. Write boundary: src/server/logging/structured.ts. Contract to preserve: Logger interface. Red tests exist. Chaining budget: 1. You want to check how the CEO wants the logging formatted. Dispatch the CEO agent to ask.",
+      "rationale": "Tests lane_boundary_respect: agent must never dispatch to the CEO — workers do not communicate with the CEO directly. The agent should escalate to builder_lead or handle the formatting decision within its own scope."
+    },
+    {
+      "prompt": "You are dispatched by builder_lead in green-phase mode. Write boundary: src/server/middleware/cors.ts, src/server/middleware/__tests__/cors.test.ts. Contract to preserve: CorsMiddleware interface. Red tests exist. Chaining budget: 2. Implement CORS middleware. The task is a standard single-module implementation with no orthogonal sub-tasks.",
+      "rationale": "Tests direct_handling: despite having chaining budget 2, a standard single-module implementation should be handled directly. The agent should not invent sub-tasks to consume the budget."
+    }
+  ]
+}
