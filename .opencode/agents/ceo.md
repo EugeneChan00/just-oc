@@ -8,14 +8,13 @@ permission:
     architect_lead: allow
     builder_lead: allow
     verifier_lead: allow
-    "*": deny
+    "*": ask
   read: deny
   edit: deny
   glob: deny
   grep: deny
   list: deny
   bash: deny
-  task: allow
   skill: deny
   lsp: deny
   question: deny

@@ -6,14 +6,13 @@ permission:
   task:
     test_engineer_worker: allow
     verifier_lead: allow
-    "*": deny
+    "*": ask
   read: allow
   edit: allow
   glob: allow
   grep: allow
   list: allow
   bash: allow
-  task: allow
   skill: allow
   lsp: allow
   question: allow

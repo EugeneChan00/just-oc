@@ -5,17 +5,16 @@ mode: subagent
 permission:
   task:
     solution_architect_worker: allow
-    "*": deny
+    "*": ask
   read: allow
   edit: allow
   glob: allow
   grep: allow
   list: allow
   bash: allow
-  task: allow
   skill: allow
   lsp: allow
-  TodoWrite
+  TodoWrite: allow
   question: allow
   webfetch: allow
   websearch: allow
