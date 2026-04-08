@@ -1,125 +1,38 @@
 """
 autoresearch.loop.config
 
-CLI argument parsing and configuration for the optimization loop.
+CLI argument parsing for the eval harness.
 """
 
 import argparse
-import sys
 from typing import Optional
 
-
-# Exit codes
 EXIT_COMPLETED = 0
 EXIT_AGENT_NOT_FOUND = 1
-EXIT_EVAL_PROMPTS_NOT_FOUND = 2
 EXIT_OPENCODE_NOT_FOUND = 3
-EXIT_BASELINE_ZERO = 4
-EXIT_AGENT_CHECK_FAILED = 5
 
 
 def build_argparser() -> argparse.ArgumentParser:
-    """
-    Build and return the CLI argument parser.
-
-    Returns:
-        argparse.ArgumentParser configured for AutoResearch optimization loop.
-    """
-    parser = argparse.ArgumentParser(
+    p = argparse.ArgumentParser(
         prog="autoresearch",
-        description="AutoResearch optimization loop for OpenCode agent prompt improvement.",
+        description="AutoResearch Eval Harness — run evals and optimize agent prompts",
     )
-
-    parser.add_argument(
-        "--agent",
-        type=str,
-        required=True,
-        help="Agent name (must match _<name>_worker.md filename in .opencode/agents/)",
-    )
-
-    parser.add_argument(
-        "--max-rounds",
-        type=int,
-        default=20,
-        help="Maximum optimization iterations (default: 20)",
-    )
-
-    parser.add_argument(
-        "--score-threshold",
-        type=float,
-        default=0.01,
-        help="Minimum composite score delta to accept a change (default: 0.01)",
-    )
-
-    parser.add_argument(
-        "--consecutive-no-improvement-cap",
-        type=int,
-        default=3,
-        help="Stop after N rounds with < score_threshold improvement (default: 3)",
-    )
-
-    parser.add_argument(
-        "--composite-weight",
-        type=float,
-        default=0.4,
-        help="Weight of composite prompts in composite score, 0.0-1.0 (default: 0.4)",
-    )
-
-    parser.add_argument(
-        "--stochastic-runs",
-        type=int,
-        default=3,
-        help="Number of runs per eval prompt for stochastic handling (default: 3)",
-    )
-
-    parser.add_argument(
-        "--eval-category",
-        type=str,
-        default="all",
-        choices=["all", "standalone", "composite"],
-        help="Which eval set to run: all, standalone, or composite (default: all)",
-    )
-
-    parser.add_argument(
-        "--event-url",
-        type=str,
-        default="http://localhost:8000/events",
-        help="Event stream endpoint URL for real-time viewer (default: http://localhost:8000/events)",
-    )
-
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        default=False,
-        help="Print per-prompt scores to stdout (default: False)",
-    )
-
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        default=False,
-        help="Load prompts and compute baseline only, no optimization (default: False)",
-    )
-
-    parser.add_argument(
-        "--check-agents",
-        action="store_true",
-        default=False,
-        help="Verify all OpenCode agents are correctly configured, then exit (default: False)",
-    )
-
-    return parser
+    p.add_argument("--agent", type=str, required=True,
+                   help="Agent name (e.g., 'ceo', 'backend_developer_worker') or 'all'")
+    p.add_argument("--run-id", type=str, default=None,
+                   help="Run ID (auto-generated if omitted)")
+    p.add_argument("--max-rounds", type=int, default=20,
+                   help="Max optimization rounds (default: 20)")
+    p.add_argument("--eval-only", action="store_true",
+                   help="Run eval without optimization loop")
+    p.add_argument("--parallel", type=int, default=3,
+                   help="Max concurrent agent evals (default: 3)")
+    p.add_argument("--verbose", action="store_true",
+                   help="Print per-prompt scores to stdout")
+    p.add_argument("--timeout", type=int, default=300,
+                   help="Timeout per agent run in seconds (default: 300)")
+    return p
 
 
 def parse_args(args: Optional[list] = None) -> argparse.Namespace:
-    """
-    Parse command line arguments.
-
-    Args:
-        args: Optional list of arguments (for testing). If None, uses sys.argv.
-
-    Returns:
-        Parsed argparse.Namespace.
-    """
-    parser = build_argparser()
-    return parser.parse_args(args)
+    return build_argparser().parse_args(args)

@@ -1,57 +1,38 @@
 """
 autoresearch.harness.event_listener
 
-Tracks tool calls during agent execution.
+Parses OpenCode NDJSON stdout into structured events.
+OpenCode v1.4.0 emits: step_start, tool_use, text, step_finish, error.
+Docs: https://opencode.ai
 """
 
 import json
-import time
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any
 
 
-@dataclass
-class ToolCall:
-    """Represents a single tool call event from the agent."""
+class EventParser:
+    """Parse OpenCode NDJSON stdout into structured events."""
 
-    tool_name: str
-    arguments: dict
-    result: Optional[str] = None
-    timestamp: float = field(default_factory=time.time)
-
-
-class EventListener:
-    """Tracks and parses tool call events from NDJSON output."""
-
-    def __init__(self):
-        """Initialize EventListener with empty tool call history."""
-        self.tool_calls: List[ToolCall] = []
-
-    def reset(self) -> None:
-        """Clear accumulated events."""
-        self.tool_calls.clear()
-
-    def parse_stream(self, ndjson_lines: List[str]) -> List[ToolCall]:
-        """
-        Parse NDJSON lines from runner output.
-
-        Extracts tool_name, arguments, result from each event.
-        Returns list of ToolCall objects.
-
-        Args:
-            ndjson_lines: List of NDJSON string lines from runner output.
+    @staticmethod
+    def parse(stdout: str) -> dict[str, Any]:
+        """Parse NDJSON stdout from `opencode run --format json`.
 
         Returns:
-            List of ToolCall objects parsed from the stream.
-
-        Note:
-            NDJSON event shape assumed:
-            {"type": "tool_call", "tool": "read", "args": {"filePath": "foo.py"}, "result": "..."}
-            {"type": "tool_call", "tool": "write", "args": {"content": "..."}, "result": null}
-            {"type": "agent_turn", "content": "..."}
+            {
+                "text": str,                  # concatenated agent text response
+                "task_calls": list[dict],      # task tool dispatches (delegation)
+                "tool_calls": list[dict],      # all other tool calls
+                "tokens": dict | None,         # token usage from final step_finish
+                "error": str | None,           # error message if any
+            }
         """
-        parsed = []
-        for line in ndjson_lines:
+        text_parts: list[str] = []
+        task_calls: list[dict] = []
+        tool_calls: list[dict] = []
+        tokens: dict | None = None
+        error: str | None = None
+
+        for line in stdout.strip().splitlines():
             if not line:
                 continue
             try:
@@ -59,46 +40,48 @@ class EventListener:
             except json.JSONDecodeError:
                 continue
 
-            if event.get("type") == "tool_call":
-                tool_name = event.get("tool", "")
-                args = event.get("args", {})
-                result = event.get("result")
-                timestamp = event.get("timestamp", time.time())
+            etype = event.get("type")
+            part = event.get("part", {})
 
-                tool_call = ToolCall(
-                    tool_name=tool_name,
-                    arguments=args,
-                    result=result,
-                    timestamp=timestamp,
-                )
-                parsed.append(tool_call)
-                self.tool_calls.append(tool_call)
+            if etype == "text":
+                text_parts.append(part.get("text", ""))
 
-        return parsed
+            elif etype == "tool_use":
+                tool = part.get("tool", "")
+                state = part.get("state", {})
+                inp = state.get("input", {})
+                out = state.get("output", "")
+                meta = state.get("metadata", {})
 
-    def get_tool_frequency(self) -> Dict[str, int]:
-        """
-        Returns {tool_name: count} for all tracked calls.
+                if tool == "task":
+                    task_calls.append({
+                        "subagent_type": inp.get("subagent_type", "").replace("-", "_"),
+                        "description": inp.get("description", ""),
+                        "prompt": inp.get("prompt", ""),
+                        "output": out,
+                        "session_id": meta.get("sessionId", ""),
+                        "status": state.get("status", ""),
+                    })
+                else:
+                    tool_calls.append({
+                        "tool": tool,
+                        "input": inp,
+                        "output": out,
+                        "status": state.get("status", ""),
+                    })
 
-        Returns:
-            Dictionary mapping tool names to their call counts.
-        """
-        freq: Dict[str, int] = {}
-        for tc in self.tool_calls:
-            freq[tc.tool_name] = freq.get(tc.tool_name, 0) + 1
-        return freq
+            elif etype == "step_finish":
+                if part.get("reason") == "stop":
+                    tokens = part.get("tokens")
 
-    def get_tools_used(self) -> List[str]:
-        """
-        Returns unique tool names used.
+            elif etype == "error":
+                err = event.get("error", {})
+                error = err.get("data", {}).get("message", err.get("name", "unknown error"))
 
-        Returns:
-            List of unique tool names in order of first use.
-        """
-        seen = set()
-        tools = []
-        for tc in self.tool_calls:
-            if tc.tool_name not in seen:
-                seen.add(tc.tool_name)
-                tools.append(tc.tool_name)
-        return tools
+        return {
+            "text": "".join(text_parts),
+            "task_calls": task_calls,
+            "tool_calls": tool_calls,
+            "tokens": tokens,
+            "error": error,
+        }
