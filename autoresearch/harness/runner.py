@@ -31,7 +31,7 @@ class Runner:
         Run opencode with the given agent and prompt.
 
         Args:
-            agent: Agent name to run (e.g., "backend-developer").
+            agent: Agent name to run (e.g., "backend_developer_worker").
             prompt: The prompt/question to send to the agent.
             format: Output format. Default "json" (NDJSON).
 

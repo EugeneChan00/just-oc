@@ -117,7 +117,7 @@ class OptimizationDriver:
         Convert logical agent name to opencode agent name (filename-based).
 
         OpenCode uses the filename (without .md extension) as the agent identifier.
-        So "researcher" -> "researcher_worker", "backend-developer" -> "backend_developer_worker".
+        So "researcher" -> "researcher_worker", "backend_developer" -> "backend_developer_worker".
 
         Args:
             logical_name: The logical agent name (e.g., "researcher").

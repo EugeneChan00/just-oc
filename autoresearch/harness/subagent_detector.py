@@ -34,13 +34,10 @@ class SubagentDetector:
         "solution-architect": re.compile(
             r"SOLUTION_ARCHITECT|solution-architect", re.IGNORECASE
         ),
-        "strategic-scoper": re.compile(
-            r"STRATEGIC_SCOPER|strategic-scoper", re.IGNORECASE
-        ),
+        "scoper": re.compile(r"SCOPER|scoper", re.IGNORECASE),
         "architect": re.compile(r"ARCHITECT|architect", re.IGNORECASE),
         "verifier": re.compile(r"VERIFIER|verifier", re.IGNORECASE),
         "builder": re.compile(r"BUILDER|builder", re.IGNORECASE),
-        "scoper": re.compile(r"SCOPER|scoper", re.IGNORECASE),
     }
 
     def __init__(self):
