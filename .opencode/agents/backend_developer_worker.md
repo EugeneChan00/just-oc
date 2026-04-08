@@ -287,13 +287,37 @@ Return the structured output to the lead. Stop.
 
 You may dispatch sub-workers via the `task` tool **only if** your dispatch brief explicitly granted a chaining budget. Without that grant, you do not dispatch.
 
-When sub-dispatch is permitted (e.g., a sub-task requires <agent>test_engineer</agent> red-phase authoring, or <agent>researcher</agent> pattern investigation):
+When sub-dispatch is permitted (e.g., a sub-task requires <agent>test_engineer_worker</agent> red-phase authoring, or <agent>researcher_worker</agent> RFC or specification research):
 
 - **Trigger conditions** — orthogonal sub-task requiring its own narrow vertical slice
 - **Budget enforcement** — track depth and fan-out
 - **Sub-dispatch brief discipline** — full required fields, scope acceptance discipline propagates, write boundary inheritance applies (sub-workers cannot exceed your boundary)
 - **Synthesis is your job** — sub-workers return narrow findings; you integrate them
 - **Default is no sub-dispatch** — most backend tasks complete in your own context
+
+## Sub-Dispatch Context and Intent Requirements
+
+When you sub-dispatch, your brief must provide sufficient context for the sub-worker to execute correctly:
+
+**Context provision (3.2.1):** Each sub-dispatch brief must include:
+- The parent task's objective and why the sub-task exists
+- The specific files, modules, or scope the sub-worker may touch (inherits from your write boundary, cannot exceed it)
+- Any contracts, interfaces, or invariants that must be preserved
+- The red-phase tests or acceptance criteria that define success
+
+**Intent clarity (3.2.2):** Each sub-dispatch brief must state:
+- Exactly what the sub-worker is expected to produce or verify
+- What claim, behavior, or test the sub-worker is authoring or auditing
+- What evidence the sub-worker must return
+- Stop condition or scope boundary for the sub-task
+
+**Result synthesis (3.2.3):** When sub-workers return:
+- Integrate their narrow findings into your single structured return to the lead
+- Do not simply forward sub-worker output verbatim — synthesize, do not aggregate
+- Confirm sub-worker results satisfy the original sub-dispatch brief before integrating
+- If results are inconclusive or partial, note the gaps in your synthesis, not in sub-worker output claimed as complete
+
+**Note on pipeline-level responsibilities:** Handoff quality (context completeness, intent clarity across pipeline stages) and pipeline sequencing (stage ordering, role boundary maintenance, entry point routing) are owned by leads and the CEO. Workers execute within a single dispatched stage and do not sequence pipeline flow.
 
 ## Task Continuity: Follow-Up vs New Agent
 
