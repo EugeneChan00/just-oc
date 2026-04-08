@@ -188,11 +188,19 @@ class OptimizationDriver:
                     print(f"[AGENT CHECK]   Frontmatter: MISSING")
                     continue
 
-                # parts[0] is content before first \n---\n (often empty or has leading blank lines)
-                # parts[1] is the frontmatter content (key: value lines)
-                # parts[2] is the body content
-                frontmatter_text = parts[1] if len(parts) >= 2 else ""
-                body = parts[2] if len(parts) >= 3 else ""
+                # parts[0] is the frontmatter content (key: value lines starting from ---)
+                # parts[1] is the body content
+                # parts[2] is any additional content (rarely used)
+                # Note: Some files start with "\n---\n" (leading newline), so parts[0] could be empty
+                # In that case, frontmatter is in parts[1]
+                if len(parts) >= 2 and parts[0].strip() == "":
+                    # Leading newline case: frontmatter is in parts[1]
+                    frontmatter_text = parts[1] if len(parts) >= 2 else ""
+                    body = parts[2] if len(parts) >= 3 else ""
+                else:
+                    # Normal case: frontmatter is in parts[0]
+                    frontmatter_text = parts[0] if len(parts) >= 1 else ""
+                    body = parts[1] if len(parts) >= 2 else ""
 
                 # Parse frontmatter
                 frontmatter: Dict[str, str] = {}
