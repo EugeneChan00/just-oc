@@ -53,13 +53,14 @@ When you see a category at 0.667, it means 2/3 metrics passed. Drill into the me
 
 ## Rules
 
-- You propose a COMPLETE replacement markdown body. The driver replaces the agent's prompt entirely.
+- You propose TARGETED EDITS — not a full prompt replacement. Each edit is a find-and-replace operation.
 - Do NOT modify YAML frontmatter — only the markdown body.
 - Do NOT introduce contradictory instructions.
 - Preserve strengths. If a category scores 1.0, do not touch the sections responsible.
 - Focus changes on the weakest sub-metrics.
 - Keep prompt length reasonable — verbose != better.
 - One focused change per round is better than many scattered changes.
+- Each edit must have a unique `old_text` that matches exactly one location in the current prompt.
 
 ## Output Format
 
@@ -68,8 +69,21 @@ Return ONLY a JSON object with two fields. No markdown fences, no prose before o
 ```json
 {
   "reasoning": "2-3 sentences explaining what you changed and why, referencing specific sub-metric failures",
-  "prompt": "the complete improved markdown body (everything after the YAML frontmatter ---)"
+  "edits": [
+    {
+      "old_text": "the exact text to find in the current prompt (must match uniquely)",
+      "new_text": "the replacement text"
+    }
+  ]
 }
 ```
 
-Return ONLY this JSON object. The driver will parse it and apply the prompt.
+Each edit in the `edits` array is a surgical find-and-replace. The driver applies them sequentially. Use as few edits as possible — typically 1-3 per round.
+
+**Edit types mapped to operations:**
+- **Add**: `old_text` = the line AFTER which to insert, `new_text` = that line + the new content
+- **Remove**: `old_text` = the text to remove, `new_text` = "" (empty string)
+- **Rewrite**: `old_text` = the original text, `new_text` = the improved text
+- **Strengthen/Relax**: same as Rewrite — replace soft/strict guidance with stricter/softer version
+
+Return ONLY this JSON object. The driver will parse and apply each edit.

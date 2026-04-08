@@ -112,8 +112,8 @@ class EvalDriver:
         """
         console.print(f"\n[bold]Evaluating: {agent_name}[/bold]")
         scaffold_path = self.scaffolder.scaffold(agent_name, run_id)
-        self.runtime_log.log_scaffold(agent_name, str(scaffold_path))
         log_path = self.runtime_log.start(agent_name, run_id)
+        self.runtime_log.log_scaffold(agent_name, str(scaffold_path))
         self._log(f"Log: {log_path}")
 
         all_results: dict[str, dict] = {}
@@ -211,8 +211,43 @@ class EvalDriver:
 
 ---
 
-Now analyze the score history, identify the weakest sub-metrics, and propose an improved prompt.
-Return ONLY the JSON object with "reasoning" and "prompt" fields."""
+Now analyze the score history, identify the weakest sub-metrics, and propose targeted edits.
+Return ONLY the JSON object with "reasoning" and "edits" fields."""
+
+    # ── Diff-based edit application ──────────────────────────────
+
+    def apply_edits(self, prompt: str, edits: list[dict]) -> tuple[str, int]:
+        """Apply a list of {old_text, new_text} edits to the prompt.
+
+        Returns (modified_prompt, edits_applied_count).
+        """
+        applied = 0
+        for edit in edits:
+            old_text = edit.get("old_text", "")
+            new_text = edit.get("new_text", "")
+            if old_text and old_text in prompt:
+                prompt = prompt.replace(old_text, new_text, 1)
+                applied += 1
+        return prompt, applied
+
+    # ── Git commit per iteration ─────────────────────────────────
+
+    def git_commit(self, agent_name: str, round_num: int, score: float, reasoning: str, accepted: bool) -> None:
+        """Commit agent file changes after each optimization round."""
+        agent_file = AGENT_DIR / f"{agent_name}.md"
+        status = "accepted" if accepted else "rejected"
+        msg = (
+            f"autoresearch: {agent_name} round {round_num} ({status}, score={score:.3f})\n\n"
+            f"{reasoning[:500]}"
+        )
+        try:
+            subprocess.run(["git", "add", str(agent_file)], capture_output=True, timeout=10)
+            subprocess.run(["git", "commit", "-m", msg], capture_output=True, timeout=10)
+            self._log(f"  Git commit: round {round_num} ({status})")
+        except Exception as e:
+            self._log(f"  Git commit failed: {e}")
+
+    # ── Optimization loop ────────────────────────────────────────
 
     def run_optimization(self, agent_name: str) -> None:
         """Run the optimization loop for one agent."""
@@ -247,34 +282,61 @@ Return ONLY the JSON object with "reasoning" and "prompt" fields."""
 
             # Call optimizer
             self._log("Calling optimizer agent...")
-            opt_result = self.runner.run("optimizer", optimizer_prompt)
-            opt_parsed = EventParser.parse(opt_result.stdout)
+            try:
+                opt_result = self.runner.run("optimizer", optimizer_prompt)
+                opt_parsed = EventParser.parse(opt_result.stdout)
+            except subprocess.TimeoutExpired:
+                console.print(f"  [yellow]Round {round_num}: optimizer timed out, skipping[/yellow]")
+                continue
 
-            # Parse optimizer response
-            proposed_prompt = None
+            # Parse optimizer response — expect {reasoning, edits}
             reasoning = ""
-            json_match = re.search(r"\{[^{}]*\"prompt\"[^{}]*\}", opt_parsed["text"], re.DOTALL)
-            if not json_match:
-                # Try multiline match
-                json_match = re.search(r"\{.*?\"prompt\"\s*:\s*\".*?\"\s*\}", opt_parsed["text"], re.DOTALL)
-            if json_match:
+            edits = []
+            # Try extracting JSON with edits array
+            for pattern in [
+                r"```json\s*(\{.*?\})\s*```",
+                r"```\s*(\{.*?\})\s*```",
+                r"(\{[^{}]*\"edits\"[^{}]*\[.*?\][^{}]*\})",
+            ]:
+                match = re.search(pattern, opt_parsed["text"], re.DOTALL)
+                if match:
+                    try:
+                        obj = json.loads(match.group(1))
+                        reasoning = obj.get("reasoning", "")
+                        edits = obj.get("edits", [])
+                        break
+                    except (json.JSONDecodeError, IndexError):
+                        continue
+
+            # Fallback: try parsing entire text as JSON
+            if not edits:
                 try:
-                    obj = json.loads(json_match.group())
-                    proposed_prompt = obj.get("prompt", "")
+                    obj = json.loads(opt_parsed["text"].strip())
                     reasoning = obj.get("reasoning", "")
+                    edits = obj.get("edits", [])
                 except json.JSONDecodeError:
                     pass
 
-            if not proposed_prompt or len(proposed_prompt) < 10:
-                console.print(f"  [yellow]Round {round_num}: optimizer returned invalid prompt, skipping[/yellow]")
+            if not edits:
+                console.print(f"  [yellow]Round {round_num}: optimizer returned no edits, skipping[/yellow]")
                 continue
 
             console.print(f"  [dim]Reasoning: {reasoning[:200]}[/dim]")
+            console.print(f"  [dim]Edits proposed: {len(edits)}[/dim]")
 
-            # Apply proposed prompt
+            # Apply diff-based edits
+            proposed_prompt, applied_count = self.apply_edits(current_prompt, edits)
+
+            if applied_count == 0:
+                console.print(f"  [yellow]Round {round_num}: no edits matched, skipping[/yellow]")
+                continue
+
+            console.print(f"  [dim]Edits applied: {applied_count}/{len(edits)}[/dim]")
+
+            # Backup and write
             self.save_agent_prompt(agent_name, proposed_prompt, backup_round=round_num)
 
-            # Eval the new prompt
+            # Eval the edited prompt
             run_id = self._generate_run_id(round_num)
             results, new_score = self.eval_agent(agent_name, run_id)
             new_breakdown = full_breakdown(results)
@@ -284,17 +346,22 @@ Return ONLY the JSON object with "reasoning" and "prompt" fields."""
                 "categories": new_breakdown["categories"],
                 "sub_metrics": {k: v for k, v in new_breakdown["sub_metrics"].items() if v is not None},
                 "reasoning": reasoning[:500],
+                "edits_proposed": len(edits),
+                "edits_applied": applied_count,
             })
 
             # Accept or reject
-            if new_score > best_score:
+            accepted = new_score > best_score
+            if accepted:
                 delta = new_score - best_score
                 best_score = new_score
                 console.print(f"  [green]ACCEPTED: {new_score:.3f} (+{delta:.3f})[/green]")
             else:
-                # Restore previous prompt
                 self.save_agent_prompt(agent_name, current_prompt)
                 console.print(f"  [red]REJECTED: {new_score:.3f} (best={best_score:.3f})[/red]")
+
+            # Git commit after each round
+            self.git_commit(agent_name, round_num, new_score, reasoning, accepted)
 
         console.print(f"\n[bold]Optimization complete. Best score: {best_score:.3f}[/bold]")
 
