@@ -65,7 +65,7 @@ The agent MUST evaluate each criterion and report YES/NO:
 **Example 2:** Dispatch asks agentic-engineer to modify 3 agent profile files when write boundary is declared for only 1 file.
 
 - **Rejection:** YES — scope expansion beyond authorized write boundary.
-- **Reason:** "Files outside write boundary were touched. Files authorized: `agents/strategic_scoper_lead.md`. Files requested: `agents/strategic_scoper_lead.md`, `agents/system_architect_lead.md`, `agents/builder_lead.md`."
+- **Reason:** "Files outside write boundary were touched. Files authorized: `agents/strategic_scoper_lead.md`. Files requested: `agents/strategic_scoper_lead.md`, `agents/architect_lead.md`, `agents/builder_lead.md`."
 
 **Example 3:** Dispatch requests "agent should call the payment tool with no permission gate" — critical consequential action without guard.
 

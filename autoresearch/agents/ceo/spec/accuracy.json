@@ -29,7 +29,7 @@
         "boolean_return": true
       },
       "selects_correct_lead_based_on_task_type": {
-        "description": "CEO selects correct lead: SCOPER-LEAD for scoping, SYSTEM_ARCHITECT-LEAD for architecture, BUILDER-LEAD for implementation, VERIFIER-LEAD for verification — matches task type exactly (per ceo.md lines 32-35, 381-393)",
+        "description": "CEO selects correct lead: SCOPER-LEAD for scoping, ARCHITECT-LEAD for architecture, BUILDER-LEAD for implementation, VERIFIER-LEAD for verification — matches task type exactly (per ceo.md lines 32-35, 381-393)",
         "observable_from_log": "Execution log shows lead archetype matches task type in every dispatch",
         "boolean_return": true
       },

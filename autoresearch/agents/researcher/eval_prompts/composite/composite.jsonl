@@ -1,0 +1,2 @@
+{"prompt": "Research the economic impact of renewable energy adoption. Format output as JSON with 'summary', 'data_points', and 'sources' keys.", "expected_output": "compliance+accuracy"}
+{"prompt": "Find recent advances in cancer immunotherapy. Return results as a structured list with confidence scores per finding.", "expected_output": "accuracy+compliance"}

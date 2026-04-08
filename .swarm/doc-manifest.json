@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "scanned_at": "2026-04-08T04:24:07.555Z",
+  "files": [
+    {
+      "path": ".kilocode/skills/README.md",
+      "title": "Kilo-Specific Skills",
+      "summary": "This directory contains skills specific to Kilo Code that may not be compatible with other OpenCode implementations. Skills here are symlinked to `~/.kilo/skills/` or loaded via Kilo's skill config...",
+      "lines": 6,
+      "mtime": 1775568382135
+    },
+    {
+      "path": ".opencode/agents_decaprcated/README.md",
+      "title": "Agents Configuration",
+      "summary": "This directory contains custom agent definitions for OpenCode/Kilo. - `general.md` - General purpose agent for multi-step research tasks - `explore.md` - Fast read-only agent for codebase explorati...",
+      "lines": 36,
+      "mtime": 1775568365455
+    },
+    {
+      "path": ".opencode/commands/README.md",
+      "title": "Commands Configuration",
+      "summary": "This directory contains custom slash commands for OpenCode/Kilo. - `*.md` - Individual command definitions - `plugins/` - Plugin-specific commands ```yaml --- description: Brief description shown i...",
+      "lines": 33,
+      "mtime": 1775568369623
+    },
+    {
+      "path": ".opencode/config/README.md",
+      "title": "Shared Configuration Snippets",
+      "summary": "This directory contains reusable configuration snippets that can be referenced by agents. ``` config/ ├── prompts/      # Reusable prompt templates └── rules/        # Custom rules for specific fil...",
+      "lines": 24,
+      "mtime": 1775568381511
+    },
+    {
+      "path": ".opencode/skills/README.md",
+      "title": "Skills Configuration",
+      "summary": "This directory contains skill definitions following the Agent Skills open standard. ``` skills/ ├── README.md ├── api-design/ │   └── SKILL.md ├── code-review/ │   └── SKILL.md └── plugins/ └── */S...",
+      "lines": 46,
+      "mtime": 1775568371887
+    },
+    {
+      "path": ".opencode/skills/swiss-web-design/examples/images/README.md",
+      "title": "Reference Images",
+      "summary": "Save Swiss design inspiration images here: screenshots of great Swiss websites, typography examples, grid layout references, color palette samples, mood boards.",
+      "lines": 4,
+      "mtime": 1775568751631
+    },
+    {
+      "path": ".opencode/skills/swiss-web-design/examples/README.md",
+      "title": "Swiss Web Design Examples",
+      "summary": "This folder is a workspace for collecting reference material when working on Swiss design projects. When starting a project, the agent should: 1. Search online for Swiss web design references 2. Sa...",
+      "lines": 17,
+      "mtime": 1775568751631
+    },
+    {
+      "path": "AGENTS.md",
+      "title": "Just-OC OpenCode/Kilo Configuration",
+      "summary": "This repository contains unified OpenCode/Kilo plugin configurations for a mono repo structure. ``` .just-oc/ ├── .opencode/          # OpenCode/Kilo config (symlink to system) │   ├── agents/     ...",
+      "lines": 64,
+      "mtime": 1775568392163
+    },
+    {
+      "path": "plugins/README.md",
+      "title": "Plugins Directory",
+      "summary": "This directory contains plugin source code for the just-oc mono repo. Each plugin should be in its own subdirectory: ``` plugins/ ├── my-plugin/ │   ├── README.md │   ├── src/ │   └── package.json ...",
+      "lines": 35,
+      "mtime": 1775568402595
+    },
+    {
+      "path": "README.md",
+      "title": "Just-OC: OpenCode/Kilo Mono Repo",
+      "summary": "Unified OpenCode and Kilo Code configuration repository for managing plugins, agents, skills, and commands in a mono repo structure. ```bash git clone <repo-url> ~/just-oc ln -s ~/just-oc/.opencode...",
+      "lines": 94,
+      "mtime": 1775568399919
+    }
+  ]
+}

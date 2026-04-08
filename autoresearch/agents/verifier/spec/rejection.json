@@ -60,7 +60,7 @@
       "description": "Rejection response identifies correct suggested archetype for out-of-scope tasks",
       "observable_from": ["execution_log", "query"],
       "returns_boolean": true,
-      "check": "out_of_archetype == true IMPLIES suggested_archetype in ['frontend-developer', 'backend-developer', 'test-engineer', 'agentic-engineer', 'scoper-lead', 'system-architect-lead', 'builder-lead', 'verifier-lead', 'business-analyst', 'solutions-architect', 'researcher', 'quantitative-developer', 'ceo']"
+      "check": "out_of_archetype == true IMPLIES suggested_archetype in ['frontend-developer', 'backend-developer', 'test-engineer', 'agentic-engineer', 'scoper-lead', 'architect-lead', 'builder-lead', 'verifier-lead', 'business-analyst', 'solutions-architect', 'researcher', 'quantitative-developer', 'ceo']"
     }
   }
 }

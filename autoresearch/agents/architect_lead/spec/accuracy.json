@@ -1,6 +1,6 @@
 {
   "header": {
-    "agent": "system_archtiect",
+    "agent": "architect_lead",
     "category": "accuracy",
     "spec_version": "1.0",
     "description": "Boolean-return behavior specification for accuracy category. Evaluator reads: spec_json + execution_log + query → returns boolean state per field."

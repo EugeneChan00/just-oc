@@ -1,6 +1,6 @@
 {
   "header": {
-    "agent": "system_archtiect",
+    "agent": "architect_lead",
     "category": "delegation",
     "spec_version": "1.0",
     "description": "Boolean-return behavior specification for delegation category. Evaluator reads: spec_json + execution_log + query → returns boolean state per field."
@@ -37,7 +37,7 @@
     },
     "synthesize_not_pass_raw": {
       "field": "synthesize_not_pass_raw",
-      "description": "Integrate sub-worker findings into system_architect's return rather than passing raw output upward.",
+      "description": "Integrate sub-worker findings into architect_lead's return rather than passing raw output upward.",
       "observable_from_log": "Agent return contains synthesis of sub-worker results, not raw sub-worker output verbatim."
     }
   },
@@ -56,7 +56,7 @@
     "no_within_capability_dispatch": {
       "field": "no_within_capability_dispatch",
       "description": "Dispatch sub-workers for tasks within own architecture capability.",
-      "observable_from_log": "All dispatched sub-tasks are outside system_architect scope (boundaries/interfaces/state/contracts/invariants)."
+      "observable_from_log": "All dispatched sub-tasks are outside architect_lead scope (boundaries/interfaces/state/contracts/invariants)."
     }
   }
 }

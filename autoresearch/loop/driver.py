@@ -52,6 +52,7 @@ class OptimizationDriver:
     """Orchestrates the prompt optimization loop."""
 
     # OpenCode agent file path template
+    # Agent files are named {name}_worker.md in .opencode/agents/
     AGENT_FILE_TEMPLATE = ".opencode/agents/{name}_worker.md"
 
     # Results directory template
@@ -68,7 +69,7 @@ class OptimizationDriver:
             args: Parsed CLI arguments from config.parse_args().
         """
         self.args = args
-        self.agent_name = args.agent
+        self.agent_name = args.agent  # Logical name (e.g., "researcher")
 
         # Initialize harness components
         self.runner = Runner()
@@ -88,10 +89,10 @@ class OptimizationDriver:
         )
         self.results_dir.mkdir(parents=True, exist_ok=True)
 
-        # Agent file path
+        # Agent file path - opencode agents are stored as {name}_worker.md
         self.agent_file = Path(self.AGENT_FILE_TEMPLATE.format(name=self.agent_name))
 
-        # Program file path
+        # Program file path (optimizer instructions)
         self.program_file = Path("autoresearch/program.md")
 
         # Eval prompts directory
@@ -102,6 +103,217 @@ class OptimizationDriver:
         # Event emission
         self.event_url = args.event_url
         self._event_file: Optional[Path] = None
+
+        # Print registration info
+        print(f"[DRIVER] Registered: agent_name='{self.agent_name}'")
+        print(f"[DRIVER] Agent file: {self.agent_file}")
+        print(f"[DRIVER] Agent file exists: {self.agent_file.exists()}")
+        print(
+            f"[DRIVER] OpenCode agent name: {self._opencode_agent_name(self.agent_name)}"
+        )
+
+    def _opencode_agent_name(self, logical_name: str) -> str:
+        """
+        Convert logical agent name to opencode agent name (filename-based).
+
+        OpenCode uses the filename (without .md extension) as the agent identifier.
+        So "researcher" -> "researcher_worker", "backend-developer" -> "backend_developer_worker".
+
+        Args:
+            logical_name: The logical agent name (e.g., "researcher").
+
+        Returns:
+            The opencode agent name (filename without extension).
+        """
+        # Agents are stored as {name}_worker.md
+        # The opencode agent name is the filename without extension
+        return f"{logical_name}_worker"
+
+    def check_all_agents(self) -> Tuple[bool, List[Dict[str, str]]]:
+        """
+        Check if all OpenCode agents in .opencode/agents/ are correctly configured.
+
+        Verifies:
+        1. Agent file exists
+        2. Frontmatter has required 'name' field
+        3. Frontmatter has required 'mode' field (subagent, primary, all)
+        4. Agent can be invoked via 'opencode run --agent <name>'
+
+        Returns:
+            Tuple of (all_ok, list of error dicts with 'agent' and 'error' keys)
+        """
+        import subprocess
+
+        errors: List[Dict[str, str]] = []
+        agents_dir = Path(".opencode/agents")
+
+        if not agents_dir.exists():
+            errors.append(
+                {"agent": "*", "error": f"Agents directory not found: {agents_dir}"}
+            )
+            return False, errors
+
+        # Get all agent files (use set to avoid duplicates from overlapping globs)
+        agent_files = set(
+            list(agents_dir.glob("*_worker.md")) + list(agents_dir.glob("*.md"))
+        )
+        agent_files = {
+            f
+            for f in agent_files
+            if f.name not in ["README.md", ".gitignore", "README"]
+        }
+
+        print(f"[AGENT CHECK] Found {len(agent_files)} agent files")
+
+        for agent_file in sorted(agent_files):
+            agent_name = agent_file.stem  # filename without extension
+            print(f"[AGENT CHECK] Checking agent: {agent_name}")
+
+            # Check 1: File exists (already confirmed by glob)
+            print(f"[AGENT CHECK]   File exists: OK")
+
+            # Check 2: Read and parse frontmatter
+            try:
+                content = agent_file.read_text()
+                # Split on --- delimiter that marks end of frontmatter
+                # Frontmatter format: "---\nkey: value\n---\nbody"
+                parts = content.split("\n---\n", 2)
+                if len(parts) < 2:
+                    errors.append(
+                        {
+                            "agent": agent_name,
+                            "error": "Missing frontmatter delimiter '---'",
+                        }
+                    )
+                    print(f"[AGENT CHECK]   Frontmatter: MISSING")
+                    continue
+
+                # parts[0] is content before first \n---\n (often empty or has leading blank lines)
+                # parts[1] is the frontmatter content (key: value lines)
+                # parts[2] is the body content
+                frontmatter_text = parts[1] if len(parts) >= 2 else ""
+                body = parts[2] if len(parts) >= 3 else ""
+
+                # Parse frontmatter
+                frontmatter: Dict[str, str] = {}
+                for line in frontmatter_text.strip().split("\n"):
+                    if ":" in line:
+                        key, value = line.split(":", 1)
+                        frontmatter[key.strip()] = value.strip()
+
+                # Check required fields
+                if "name" not in frontmatter:
+                    errors.append(
+                        {
+                            "agent": agent_name,
+                            "error": "Missing required frontmatter field: 'name'",
+                        }
+                    )
+                    print(f"[AGENT CHECK]   name field: MISSING")
+                else:
+                    print(f"[AGENT CHECK]   name field: '{frontmatter['name']}'")
+
+                if "mode" not in frontmatter:
+                    errors.append(
+                        {
+                            "agent": agent_name,
+                            "error": "Missing required frontmatter field: 'mode'",
+                        }
+                    )
+                    print(f"[AGENT CHECK]   mode field: MISSING")
+                else:
+                    print(f"[AGENT CHECK]   mode field: '{frontmatter['mode']}'")
+
+                if "description" not in frontmatter:
+                    errors.append(
+                        {
+                            "agent": agent_name,
+                            "error": "Missing recommended frontmatter field: 'description'",
+                        }
+                    )
+                    print(f"[AGENT CHECK]   description field: MISSING (recommended)")
+                else:
+                    print(f"[AGENT CHECK]   description field: present")
+
+                if not body.strip():
+                    errors.append(
+                        {
+                            "agent": agent_name,
+                            "error": "Empty agent body (no markdown content after frontmatter)",
+                        }
+                    )
+                    print(f"[AGENT CHECK]   body content: EMPTY")
+                else:
+                    print(f"[AGENT CHECK]   body content: {len(body)} chars")
+
+            except Exception as e:
+                errors.append(
+                    {"agent": agent_name, "error": f"Failed to parse: {str(e)}"}
+                )
+                print(f"[AGENT CHECK]   Parse error: {e}")
+                continue
+
+            # Check 3: Can opencode invoke this agent?
+            print(
+                f"[AGENT CHECK]   Testing 'opencode run --agent {agent_name} --format json'..."
+            )
+            try:
+                result = subprocess.run(
+                    ["opencode", "run", "--agent", agent_name, "--format", "json"],
+                    input="test",
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                if result.returncode == 0:
+                    # Check if it fell back to default agent
+                    if (
+                        "not found" in result.stderr.lower()
+                        or "falling back" in result.stderr.lower()
+                    ):
+                        errors.append(
+                            {
+                                "agent": agent_name,
+                                "error": f"OpenCode did not recognize agent '{agent_name}' - may have fallen back to default",
+                            }
+                        )
+                        print(f"[AGENT CHECK]   OpenCode invocation: FALLBACK DETECTED")
+                    else:
+                        print(f"[AGENT CHECK]   OpenCode invocation: OK")
+                else:
+                    errors.append(
+                        {
+                            "agent": agent_name,
+                            "error": f"OpenCode returned exit code {result.returncode}: {result.stderr[:200]}",
+                        }
+                    )
+                    print(
+                        f"[AGENT CHECK]   OpenCode invocation: FAILED ({result.returncode})"
+                    )
+            except subprocess.TimeoutExpired:
+                errors.append(
+                    {
+                        "agent": agent_name,
+                        "error": "OpenCode invocation timed out after 30s",
+                    }
+                )
+                print(f"[AGENT CHECK]   OpenCode invocation: TIMEOUT")
+            except FileNotFoundError:
+                errors.append(
+                    {"agent": agent_name, "error": "OpenCode binary not found in PATH"}
+                )
+                print(f"[AGENT CHECK]   OpenCode invocation: NOT FOUND")
+                break
+            except Exception as e:
+                errors.append(
+                    {
+                        "agent": agent_name,
+                        "error": f"OpenCode invocation failed: {str(e)}",
+                    }
+                )
+                print(f"[AGENT CHECK]   OpenCode invocation: ERROR ({e})")
+
+        return len(errors) == 0, errors
 
     def load_agent_prompt(self) -> str:
         """
@@ -465,7 +677,7 @@ class OptimizationDriver:
         Raises:
             ValueError: If baseline score is 0.
         """
-        print(f"Computing baseline score for agent '{self.agent_name}'...")
+        print(f"[BASELINE] Computing baseline score for agent '{self.agent_name}'")
 
         # Load current prompt
         current_prompt = self.load_agent_prompt()
@@ -510,6 +722,11 @@ class OptimizationDriver:
             List of EvalResult objects.
         """
         results = []
+        opencode_agent = self._opencode_agent_name(self.agent_name)
+
+        print(
+            f"[EVAL] Running agent '{opencode_agent}' on {len(eval_prompts)} eval prompts"
+        )
 
         for ep in eval_prompts:
             category = ep["category"]
@@ -531,11 +748,22 @@ class OptimizationDriver:
             eval_result = None
             num_runs = max(1, self.args.stochastic_runs)
             for run_idx in range(num_runs):
+                print(
+                    f"[EVAL]   Running eval prompt [{category}] run {run_idx + 1}/{num_runs}"
+                )
                 result = self.runner.run(
-                    agent=self.agent_name,
+                    agent=opencode_agent,
                     prompt=eval_prompt,
                     format="json",
                 )
+
+                if result.returncode != 0:
+                    print(
+                        f"[EVAL]   WARNING: opencode returned non-zero exit code: {result.returncode}"
+                    )
+                    print(
+                        f"[EVAL]   stderr: {result.stderr[:500] if result.stderr else 'none'}"
+                    )
 
                 actual_output = result.stdout if result.returncode == 0 else ""
                 ndjson_lines = (
@@ -680,45 +908,86 @@ class OptimizationDriver:
             program_text, current_prompt, round_data
         )
 
-        # Step 4: Call optimizer agent
-        result = self.runner.run("optimizer", optimizer_prompt, format="json")
+        # Step 4: Call optimizer agent (uses ceo as the optimization agent)
+        # Note: opencode uses filename (without .md) as agent identifier
+        optimizer_agent = "ceo"  # TODO: create dedicated optimizer_worker.md agent
+        print(f"[ROUND {round_num}] Calling optimizer agent '{optimizer_agent}'")
+        result = self.runner.run(optimizer_agent, optimizer_prompt, format="json")
+
+        if result.returncode != 0:
+            print(
+                f"[ROUND {round_num}] ERROR: optimizer agent failed with exit code {result.returncode}"
+            )
+            print(
+                f"[ROUND {round_num}] stderr: {result.stderr[:500] if result.stderr else 'none'}"
+            )
 
         # Step 5: Parse optimizer output
+        print(f"[ROUND {round_num}] Parsing optimizer output...")
         try:
             proposed_prompt, reasoning = self.parse_optimizer_ndjson(result.stdout)
+            print(f"[ROUND {round_num}] Successfully parsed optimizer output")
+            print(
+                f"[ROUND {round_num}] Proposed prompt length: {len(proposed_prompt)} chars"
+            )
+            print(f"[ROUND {round_num}] Reasoning preview: {reasoning[:100]}...")
         except ValueError as e:
-            print(f"Failed to parse optimizer output: {e}", file=sys.stderr)
+            print(
+                f"[ROUND {round_num}] ERROR: Failed to parse optimizer output: {e}",
+                file=sys.stderr,
+            )
+            print(
+                f"[ROUND {round_num}] stdout preview: {result.stdout[:500] if result.stdout else 'none'}..."
+            )
             return self._restore_and_skip_round(round_num, f"parse_error: {e}")
 
         # Step 6: Validate proposed prompt
         if not self.validate_proposed_prompt(proposed_prompt):
             print(
-                f"Invalid proposed prompt (length={len(proposed_prompt) if isinstance(proposed_prompt, str) else 'non-string'})",
+                f"[ROUND {round_num}] ERROR: Invalid proposed prompt (length={len(proposed_prompt) if isinstance(proposed_prompt, str) else 'non-string'})",
                 file=sys.stderr,
             )
             return self._restore_and_skip_round(round_num, "invalid_prompt")
 
         # Step 7: Backup current and write proposed
+        print(
+            f"[ROUND {round_num}] Backing up current prompt and saving proposed prompt..."
+        )
         self.save_agent_prompt(proposed_prompt, backup=True)
+        print(f"[ROUND {round_num}] Backup saved, proposed prompt written")
 
         # Step 8: Evaluate proposed prompt
+        print(
+            f"[ROUND {round_num}] Loading eval prompts and evaluating proposed prompt..."
+        )
         eval_prompts = self.load_eval_prompts()
+        print(f"[ROUND {round_num}] Loaded {len(eval_prompts)} eval prompts")
         results = self._run_evaluation(proposed_prompt, eval_prompts)
+        print(f"[ROUND {round_num}] Evaluation complete, {len(results)} results")
 
         # Step 9: Compute scores
         proposed_composite, proposed_standalone, proposed_composite_ex, proposed_std = (
             self._compute_scores(results)
         )
         proposed_category_scores = self._compute_category_scores(results)
+        print(
+            f"[ROUND {round_num}] Scores computed: composite={proposed_composite:.4f}, standalone={proposed_standalone:.4f}"
+        )
 
         # F-07: Handle zero score
         if proposed_composite == 0:
-            print("Proposed prompt scored 0 — restoring backup", file=sys.stderr)
+            print(
+                f"[ROUND {round_num}] ERROR: Proposed prompt scored 0 — restoring backup",
+                file=sys.stderr,
+            )
             self._restore_from_backup()
             return self._restore_and_skip_round(round_num, "zero_score")
 
         # Step 10: Decision
         accepted = proposed_composite > prev_score + self.args.score_threshold
+        print(
+            f"[ROUND {round_num}] Decision: delta={proposed_composite - prev_score:.4f}, threshold={self.args.score_threshold}, accepted={accepted}"
+        )
 
         if not accepted:
             # Restore from backup
@@ -848,6 +1117,12 @@ class OptimizationDriver:
             "data": data,
         }
 
+        # Always print the event for visibility
+        data_preview = json.dumps(data)
+        if len(data_preview) > 100:
+            data_preview = data_preview[:100] + "..."
+        print(f"[EVENT] {event_type}: {data_preview}")
+
         # If event_url is a file path, write there
         if self.event_url and not self.event_url.startswith("http"):
             try:
@@ -855,10 +1130,10 @@ class OptimizationDriver:
                 with open(event_path, "a") as f:
                     f.write(json.dumps(event) + "\n")
             except Exception as e:
-                print(f"Event emission error: {e}", file=sys.stderr)
-        # Otherwise, just print to stdout if verbose
-        elif self.args.verbose:
-            print(f"[EVENT] {event_type}: {json.dumps(data)[:100]}")
+                print(
+                    f"[EVENT ERROR] Failed to write event to {self.event_url}: {e}",
+                    file=sys.stderr,
+                )
 
     def _save_round_snapshot(self, round_num: int, result: RoundResult) -> None:
         """Save per-round snapshot to JSON file."""
@@ -973,59 +1248,108 @@ class OptimizationDriver:
         Returns:
             Exit code (0=completed, 4=baseline zero).
         """
-        print(f"AutoResearch optimization starting for agent '{self.agent_name}'")
+        print("=" * 60)
+        print(f"AUTORESEARCH OPTIMIZATION LOOP STARTING")
+        print(f"=" * 60)
+        print(f"[CONFIG] Target agent: '{self.agent_name}'")
         print(
-            f"Max rounds: {self.args.max_rounds}, Score threshold: {self.args.score_threshold}"
+            f"[CONFIG] OpenCode agent name: '{self._opencode_agent_name(self.agent_name)}'"
         )
+        print(f"[CONFIG] Agent file: {self.agent_file}")
+        print(f"[CONFIG] Max rounds: {self.args.max_rounds}")
+        print(f"[CONFIG] Score threshold: {self.args.score_threshold}")
+        print(f"[CONFIG] Composite weight: {self.args.composite_weight}")
+        print(f"[CONFIG] Stochastic runs: {self.args.stochastic_runs}")
+        print(f"[CONFIG] Event URL: {self.event_url}")
+        print("=" * 60)
+
+        # Check if --check-agents flag was set
+        if getattr(self.args, "check_agents", False):
+            print("\n[AGENT CHECK] Running agent configuration check...")
+            print("=" * 60)
+            all_ok, errors = self.check_all_agents()
+            print("=" * 60)
+            if all_ok:
+                print("[AGENT CHECK] SUCCESS: All agents are correctly configured!")
+                return 0
+            else:
+                print(f"[AGENT CHECK] FAILED: {len(errors)} error(s) found:")
+                for err in errors:
+                    print(f"  - Agent '{err['agent']}': {err['error']}")
+                return 1
 
         # Check agent file exists
         if not self.agent_file.exists():
-            print(f"Error: Agent file not found: {self.agent_file}", file=sys.stderr)
+            print(f"[ERROR] Agent file not found: {self.agent_file}", file=sys.stderr)
             return 1
 
         # Check opencode binary exists
         try:
-            subprocess.run(["opencode", "--version"], capture_output=True, timeout=5)
+            result = subprocess.run(
+                ["opencode", "--version"], capture_output=True, timeout=5
+            )
+            print(f"[CHECK] OpenCode binary found: {result.stdout.strip()}")
         except (FileNotFoundError, subprocess.TimeoutExpired):
-            print("Error: opencode binary not found", file=sys.stderr)
+            print("[ERROR] OpenCode binary not found", file=sys.stderr)
             return 3
 
         # Check eval prompts exist
         eval_prompts = self.load_eval_prompts()
+        print(f"[CHECK] Found {len(eval_prompts)} eval prompts")
         if not eval_prompts and not self.args.dry_run:
             print(
-                f"Warning: No eval prompts found in {self.eval_prompts_dir}",
+                f"[WARNING] No eval prompts found in {self.eval_prompts_dir}",
                 file=sys.stderr,
             )
             # Don't fail - eval prompts might be generated later
 
         # Compute baseline
+        print("[BASELINE] Computing baseline score...")
         try:
             self.baseline_score = self.compute_baseline()
+            print(f"[BASELINE] Baseline score: {self.baseline_score:.4f}")
         except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
+            print(f"[ERROR] {e}", file=sys.stderr)
             return 4
 
         if self.args.dry_run:
-            print("Dry run complete. Exiting.")
+            print("[DRYRUN] Dry run complete. Exiting.")
             return 0
 
         # Main loop
+        print("=" * 60)
+        print("STARTING OPTIMIZATION LOOP")
+        print("=" * 60)
         for round_num in range(1, self.args.max_rounds + 1):
+            print(f"\n[LOOP] Starting round {round_num}/{self.args.max_rounds}")
             # Run round
             result = self.run_round(round_num)
 
             # Check convergence
             converged, reason = self.check_convergence()
             if converged:
-                print(f"Converged: {reason}")
+                print(f"[LOOP] Converged: {reason}")
                 break
 
         # Save results
+        print("\n[SAVING] Saving optimization log and results TSV...")
         self._save_optimization_log()
         self._save_results_tsv()
 
-        print(f"\nOptimization complete. Results saved to {self.results_dir}")
+        print(f"\n{'=' * 60}")
+        print(f"OPTIMIZATION COMPLETE")
+        print(f"{'=' * 60}")
+        print(f"Results saved to: {self.results_dir}")
+        print(f"Rounds run: {len(self.rounds)}")
+        if self.rounds:
+            print(f"Final score: {self.rounds[-1].composite_score:.4f}")
+            best_idx = max(
+                range(len(self.rounds)), key=lambda i: self.rounds[i].composite_score
+            )
+            print(
+                f"Best score: {self.rounds[best_idx].composite_score:.4f} (round {best_idx + 1})"
+            )
+        print("=" * 60)
 
         return 0
 

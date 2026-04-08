@@ -41,7 +41,7 @@
     },
     "prohibited_actions": {
       "does_not_bypass_lead_with_direct_dispatch": {
-        "description": "CEO does not dispatch workers directly — all dispatches go through leads (SCOPER-LEAD, SYSTEM_ARCHITECT-LEAD, BUILDER-LEAD, VERIFIER-LEAD) (per ceo.md lines 44, 63-64, 182)",
+        "description": "CEO does not dispatch workers directly — all dispatches go through leads (SCOPER-LEAD, ARCHITECT-LEAD, BUILDER-LEAD, VERIFIER-LEAD) (per ceo.md lines 44, 63-64, 182)",
         "observable_from_log": "YES if execution log shows all dispatches routed through leads only; NO if any direct worker dispatch found",
         "boolean_return": true
       },

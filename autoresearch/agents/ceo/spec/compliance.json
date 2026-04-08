@@ -30,7 +30,7 @@
       },
       "routes_to_correct_pipeline_entry": {
         "description": "CEO routes to correct pipeline entry point: scoper for new issues, architect for architecture, builder for implementation, verifier for verification (per ceo.md lines 138-145, 381-393)",
-        "observable_from_log": "Execution log shows routing matches request type: scoping→scoper-lead, architecture→system-architect-lead, implementation→builder-lead, verification→verifier-lead",
+        "observable_from_log": "Execution log shows routing matches request type: scoping→scoper-lead, architecture→architect-lead, implementation→builder-lead, verification→verifier-lead",
         "boolean_return": true
       },
       "handles_lead_rejection_correctly": {

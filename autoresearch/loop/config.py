@@ -15,6 +15,7 @@ EXIT_AGENT_NOT_FOUND = 1
 EXIT_EVAL_PROMPTS_NOT_FOUND = 2
 EXIT_OPENCODE_NOT_FOUND = 3
 EXIT_BASELINE_ZERO = 4
+EXIT_AGENT_CHECK_FAILED = 5
 
 
 def build_argparser() -> argparse.ArgumentParser:
@@ -98,6 +99,13 @@ def build_argparser() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         help="Load prompts and compute baseline only, no optimization (default: False)",
+    )
+
+    parser.add_argument(
+        "--check-agents",
+        action="store_true",
+        default=False,
+        help="Verify all OpenCode agents are correctly configured, then exit (default: False)",
     )
 
     return parser

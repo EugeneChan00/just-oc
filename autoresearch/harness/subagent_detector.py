@@ -37,9 +37,7 @@ class SubagentDetector:
         "strategic-scoper": re.compile(
             r"STRATEGIC_SCOPER|strategic-scoper", re.IGNORECASE
         ),
-        "system-architect": re.compile(
-            r"SYSTEM_ARCHITECT|system-architect", re.IGNORECASE
-        ),
+        "architect": re.compile(r"ARCHITECT|architect", re.IGNORECASE),
         "verifier": re.compile(r"VERIFIER|verifier", re.IGNORECASE),
         "builder": re.compile(r"BUILDER|builder", re.IGNORECASE),
         "scoper": re.compile(r"SCOPER|scoper", re.IGNORECASE),

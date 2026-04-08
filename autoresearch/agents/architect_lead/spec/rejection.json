@@ -1,6 +1,6 @@
 {
   "header": {
-    "agent": "system_archtiect",
+    "agent": "architect_lead",
     "category": "rejection",
     "spec_version": "1.0",
     "description": "Boolean-return behavior specification for rejection category. Evaluator reads: spec_json + execution_log + query → returns boolean state per field."

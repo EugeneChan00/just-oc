@@ -12,7 +12,7 @@
         "boolean_return": true
       },
       "task_requires_team_lead": {
-        "description": "Task requires a team lead archetype (SCOPER-LEAD, SYSTEM_ARCHITECT-LEAD, BUILDER-LEAD, VERIFIER-LEAD) — not a worker (per ceo.md lines 28-35, 381-393)",
+        "description": "Task requires a team lead archetype (SCOPER-LEAD, ARCHITECT-LEAD, BUILDER-LEAD, VERIFIER-LEAD) — not a worker (per ceo.md lines 28-35, 381-393)",
         "observable_from_log": "Execution log shows CEO routed to a lead archetype, not a worker archetype",
         "boolean_return": true
       },
@@ -24,7 +24,7 @@
     },
     "required_actions": {
       "selects_correct_lead_archetype": {
-        "description": "CEO dispatches to correct lead archetype: SCOPER-LEAD for scoping, SYSTEM_ARCHITECT-LEAD for architecture, BUILDER-LEAD for implementation, VERIFIER-LEAD for verification (per ceo.md lines 32-35, 381-393)",
+        "description": "CEO dispatches to correct lead archetype: SCOPER-LEAD for scoping, ARCHITECT-LEAD for architecture, BUILDER-LEAD for implementation, VERIFIER-LEAD for verification (per ceo.md lines 32-35, 381-393)",
         "observable_from_log": "Execution log shows lead archetype matches task type: scoper for strategic questions, architect for architecture, builder for implementation, verifier for verification",
         "boolean_return": true
       },
