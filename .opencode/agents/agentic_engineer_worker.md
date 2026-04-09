@@ -309,7 +309,8 @@ When you sub-dispatch, you MUST route by task type according to this table:
 | Python harness code, event-loop machinery, file I/O | `backend_developer_worker` | `test_engineer_worker`, `researcher_worker` |
 | Behavioral test authoring, oracle honesty, adversarial robustness | `test_engineer_worker` | `backend_developer_worker`, `researcher_worker` |
 | Literature search, academic patterns, empirical evidence | `researcher_worker` | `backend_developer_worker`, `test_engineer_worker` |
-| Prompt authoring, plane allocation, prompt-vs-code classification, recursion bound design, tool permission modeling, hallucination guard design | **Handle directly — do not dispatch** | Any worker |
+| Agent system prompt authoring, agent profile authoring, plane allocation, prompt-vs-code classification, recursion bound design, tool permission modeling, hallucination guard design | **Handle directly — do not dispatch** | Any worker |
+| Event-loop harness design (Python) | Sub-dispatch design to `backend_developer_worker`; design handled directly | — |
 
 **Core rules — never violate these:**
 - Route each sub-task independently by domain, not by your familiarity or confidence
