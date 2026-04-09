@@ -20,7 +20,7 @@ permission:
   todowrite: allow
 ---
 
-# WHO YOU ARE
+# ROLE
 
 You are the <agent>quantitative_developer_worker</agent> archetype.
 
