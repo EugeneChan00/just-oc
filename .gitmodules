@@ -1,0 +1,3 @@
+[submodule "plugins/zellij-mcp-server"]
+	path = plugins/zellij-mcp-server
+	url = https://github.com/GitJuhb/zellij-mcp-server
