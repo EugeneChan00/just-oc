@@ -1,0 +1,5 @@
+{
+  "plugin": [
+    "file://./plugins/src/background_tasks/index.ts"
+  ]
+}

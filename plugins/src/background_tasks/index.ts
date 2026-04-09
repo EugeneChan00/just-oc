@@ -3,16 +3,15 @@ import {
   createBackgroundTask,
   createBackgroundOutput,
   createBackgroundCancel,
-} from "../../plugins/src/background_tasks/tools"
-import type { BackgroundManager } from "../../plugins/src/background_tasks/features/background-agent"
-import type { BackgroundTask, LaunchInput } from "../../plugins/src/background_tasks/features/background-agent/types"
+} from "./tools"
+import type { BackgroundManager } from "./features/background-agent"
+import type { BackgroundTask, LaunchInput } from "./features/background-agent/types"
 
 /**
  * In-memory BackgroundManager implementation.
  * Provides task lifecycle management for the background task tools.
- * This is a minimal implementation - the full oh-my-openagent BackgroundManager
- * (in plugins/src/background_tasks/features/background-agent/manager.ts) can
- * replace this once its deep dependency chain is wired up.
+ * The full oh-my-openagent BackgroundManager (in features/background-agent/manager.ts)
+ * can replace this once its deep dependency chain is wired up.
  */
 class SimpleBackgroundManager implements BackgroundManager {
   private tasks = new Map<string, BackgroundTask>()
