@@ -6,6 +6,8 @@ Docs: https://opencode.ai
 """
 
 import asyncio
+import os
+import signal
 import subprocess
 from dataclasses import dataclass
 
@@ -16,6 +18,17 @@ class AsyncResult:
     stdout: str
     stderr: str
     returncode: int
+
+
+def _kill_process_group(pid: int) -> None:
+    """Kill an entire process group. Falls back to single-process kill."""
+    try:
+        os.killpg(os.getpgid(pid), signal.SIGTERM)
+    except (ProcessLookupError, PermissionError, OSError):
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError, OSError):
+            pass
 
 
 class Runner:
@@ -40,6 +53,7 @@ class Runner:
             text=True,
             timeout=self.timeout,
             cwd=cwd,
+            start_new_session=True,  # new process group for clean cleanup
         )
 
     async def run_async(
@@ -50,14 +64,15 @@ class Runner:
     ) -> AsyncResult:
         """Run opencode agent asynchronously. Returns AsyncResult with NDJSON stdout."""
         cmd = [self.opencode_path, "run", "--attach", "http://localhost:13568", "--agent", agent, "--format", "json"]
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=cwd,
+            start_new_session=True,  # new process group for clean cleanup
+        )
         try:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=cwd,
-            )
             stdout_bytes, stderr_bytes = await asyncio.wait_for(
                 proc.communicate(input=prompt.encode()),
                 timeout=self.timeout,
@@ -68,9 +83,22 @@ class Runner:
                 returncode=proc.returncode or 0,
             )
         except asyncio.TimeoutError:
+            _kill_process_group(proc.pid)
             try:
-                proc.kill()
-                await proc.wait()
-            except Exception:
-                pass
+                await asyncio.wait_for(proc.wait(), timeout=5)
+            except asyncio.TimeoutError:
+                # Force kill if SIGTERM didn't work
+                try:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except (ProcessLookupError, PermissionError, OSError):
+                    pass
             raise subprocess.TimeoutExpired(cmd, self.timeout)
+        except BaseException:
+            # Ensure cleanup on any unexpected error (e.g. CancelledError)
+            if proc.returncode is None:
+                _kill_process_group(proc.pid)
+                try:
+                    await asyncio.wait_for(proc.wait(), timeout=5)
+                except asyncio.TimeoutError:
+                    pass
+            raise
