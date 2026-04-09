@@ -6,6 +6,7 @@
 |----------|-------------|
 | `system-prompt-length-research.md` | Full 10-query research synthesis with deep detail and all task IDs |
 | `system-prompt-design-tldr.md` | TL;DR reference card for quick lookup |
+| `opencode-plugin-ecosystem.md` | OpenCode plugin architecture: types, hooks, tools, lifecycle, config |
 
 ## How to Use
 
