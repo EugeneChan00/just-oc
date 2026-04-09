@@ -59,7 +59,7 @@ const BackgroundTaskPlugin: Plugin = async (ctx) => {
   const manager = new SimpleBackgroundManager()
 
   return {
-    tools: {
+    tool: {
       background_task: createBackgroundTask(manager, ctx.client),
       background_output: createBackgroundOutput(manager, ctx.client),
       background_cancel: createBackgroundCancel(manager, ctx.client),
