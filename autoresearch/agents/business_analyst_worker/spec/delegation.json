@@ -122,5 +122,5 @@
       "rationale": "Tests direct handling discipline: unused chaining budget does not justify additional sub-dispatches. Once the analysis is complete and the stop condition is met, the agent should return without spending remaining budget on unnecessary sub-dispatches."
     }
   ],
-  "workspace": "autoresearch/test/business_analyst_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

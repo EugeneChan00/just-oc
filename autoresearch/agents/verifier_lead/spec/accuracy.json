@@ -122,5 +122,5 @@
       "rationale": "This prompt tests the verifier lead's ability to synthesize conflicting worker findings into a coherent gate decision under the pressure of mixed signals. Two workers return positive findings and one returns a Critical finding. The verifier must apply the gate rules mechanically \u2014 any unresolved Critical leads to FAIL \u2014 without being swayed by the volume of positive evidence or the temptation to issue CONDITIONAL PASS because 'most things are fine.' Simultaneously, the verifier must not discard the positive findings; they are genuine verified strengths that should appear in the report. This exercises logical_coherence (applying gate rules correctly when findings conflict, connecting the Critical finding to the FAIL decision with explicit rule citation), fact_accuracy (reporting all three worker outputs accurately without cherry-picking or minimizing), scope_completion (synthesizing all worker outputs rather than short-circuiting to FAIL without acknowledging the strengths), and proportionality (the re-verification requirements should be targeted at the specific Critical finding \u2014 fix the test oracles \u2014 not a wholesale re-audit of the entire artifact)."
     }
   ],
-  "workspace": "autoresearch/test/verifier_lead/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

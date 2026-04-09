@@ -30,12 +30,11 @@ class Evaluator:
         parsed_events: dict[str, Any],
         sub_metric_defs: list[dict],
     ) -> dict[str, dict]:
-        """Evaluate one category (9 sub-metrics) via LLM judge.
+        """Evaluate one category (9 sub-metrics) via LLM judge (sync).
 
         Returns {numeric_id: {"description": str, "result": bool | None}}.
         On evaluator failure, returns all False with error flag.
         """
-        # Skip evaluation if agent produced no response
         if not agent_response.strip():
             return self._all_false(sub_metric_defs, reason="empty_response")
 
@@ -45,6 +44,36 @@ class Evaluator:
 
         try:
             result = self.runner.run(agent=self.EVALUATOR_AGENT, prompt=eval_prompt)
+            parsed = EventParser.parse(result.stdout)
+            evaluator_text = parsed["text"]
+        except subprocess.TimeoutExpired:
+            return self._all_false(sub_metric_defs, reason="evaluator_timeout")
+        except Exception:
+            return self._all_false(sub_metric_defs, reason="evaluator_error")
+
+        if not evaluator_text.strip():
+            return self._all_false(sub_metric_defs, reason="evaluator_empty")
+
+        return self._parse_eval_response(evaluator_text, sub_metric_defs)
+
+    async def evaluate_category_async(
+        self,
+        category: str,
+        prompt_text: str,
+        agent_response: str,
+        parsed_events: dict[str, Any],
+        sub_metric_defs: list[dict],
+    ) -> dict[str, dict]:
+        """Evaluate one category (9 sub-metrics) via LLM judge (async)."""
+        if not agent_response.strip():
+            return self._all_false(sub_metric_defs, reason="empty_response")
+
+        eval_prompt = self._build_eval_prompt(
+            category, prompt_text, agent_response, parsed_events, sub_metric_defs
+        )
+
+        try:
+            result = await self.runner.run_async(agent=self.EVALUATOR_AGENT, prompt=eval_prompt)
             parsed = EventParser.parse(result.stdout)
             evaluator_text = parsed["text"]
         except subprocess.TimeoutExpired:

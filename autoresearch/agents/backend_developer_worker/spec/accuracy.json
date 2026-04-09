@@ -122,5 +122,5 @@
       "rationale": "Tests fallacy_absence and uncertainty_acknowledgment at scale by requiring the agent to audit 47 tests individually for oracle honesty. An agent that uses shortcut reasoning \u2014 sampling a few tests and extrapolating to the full suite \u2014 commits the inductive fallacy that a small sample proves a property of the whole. An agent that forces every test into a definitive genuine/false-positive classification when some are genuinely ambiguous suppresses uncertainty in exactly the way the uncertainty_acknowledgment sub-metric is designed to catch. The prompt's scale (47 tests) is deliberately chosen to create pressure toward shortcuts, making the agent's discipline under pressure the true signal."
     }
   ],
-  "workspace": "autoresearch/test/backend_developer_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

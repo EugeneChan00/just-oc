@@ -25,12 +25,16 @@ def build_argparser() -> argparse.ArgumentParser:
                    help="Max optimization rounds (default: 20)")
     p.add_argument("--eval-only", action="store_true",
                    help="Run eval without optimization loop")
-    p.add_argument("--parallel", type=int, default=3,
-                   help="Max concurrent agent evals (default: 3)")
+    p.add_argument("--parallel", type=int, default=10,
+                   help="Max concurrent opencode runs (default: 10)")
+    p.add_argument("--memory-limit", type=int, default=4096,
+                   help="Total memory budget in MB for process tree (default: 4096)")
     p.add_argument("--verbose", action="store_true",
                    help="Print per-prompt scores to stdout")
     p.add_argument("--timeout", type=int, default=300,
                    help="Timeout per agent run in seconds (default: 300)")
+    p.add_argument("--sample", type=int, default=None,
+                   help="Randomly sample N prompts per category instead of all 10 (e.g., --sample 3)")
     return p
 
 

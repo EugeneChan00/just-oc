@@ -122,5 +122,5 @@
       "rationale": "Tests the builder_lead's ability to coordinate a genuinely complex multi-surface slice with a strict sequential dependency chain across three surfaces plus a read-only dependency. This is the highest-complexity prompt in the set, requiring the lead to demonstrate detailed boundary analysis, explicit sequencing rationale across four write surfaces, integration embedding that creates end-to-end working behavior, and comprehensive self-verification. The read-only API client dependency tests whether the lead reads the actual file to understand the interface before constructing dispatch briefs that reference it \u2014 a factual accuracy check that prevents hallucinated interface assumptions."
     }
   ],
-  "workspace": "autoresearch/test/builder_lead/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

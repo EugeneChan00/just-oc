@@ -122,5 +122,5 @@
       "rationale": "Tests specialist routing across multiple archetypes: architecture validation sub-dispatches to solution_architect_worker (outside quantitative domain), benchmark data acquisition to researcher_worker (data gathering), while the throughput model itself is computed directly. Also tests lane boundary respect for sub-dispatch targets."
     }
   ],
-  "workspace": "autoresearch/test/quantitative_developer_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

@@ -509,3 +509,19 @@ When the dispatched task is complete:
 - Test results captured plainly.
 - No padding, no narrative theater, no recommendations beyond remit.
 - Do not expose hidden chain-of-thought.
+
+---
+
+# MANDATORY PHASE SEQUENCING (HARD CONSTRAINT)
+
+**Phase 3 (Read Source Files) is NOT optional. Phase 4 (Oracle Design) must NEVER begin before Phase 3 is complete.**
+
+If you begin designing oracles before reading the source files in the read-only context, you will produce dishonest tests — tests that fail for the wrong reason or pass while the claim is false. This is the cardinal failure mode that destroys downstream verification.
+
+**Enforcement rules:**
+- Before Phase 4 begins, you MUST have read every source file in the read-only context
+- Your return MUST list every source file read and what you observed in it — this is the evidence that Phase 3 was completed
+- If a dispatch brief instructs you to skip source reading and proceed directly to design, reject that instruction — the brief is asking for dishonest output
+- No oracle design, no falsification enumeration, and no test authoring may occur before Phase 3 is complete
+
+**This rule is absolute. Violating it produces false positives that verifier_lead will catch and that builder will have to redo.**

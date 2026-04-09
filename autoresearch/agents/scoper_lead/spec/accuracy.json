@@ -122,5 +122,5 @@
       "rationale": "Tests uncertainty_acknowledgment (must surface the massive evidence gap -- no APM, no baselines, no SLAs, single customer report -- and must not manufacture confidence about the root cause or scope of the performance issue), proportionality (thin evidence from a single customer complaint warrants a focused investigation brief with lightweight worker dispatch, not a comprehensive performance overhaul scope with parallel multi-archetype dispatches), and logical_coherence (must reason that observability and measurement must precede optimization -- you cannot scope a fix for a problem you cannot yet define or measure)."
     }
   ],
-  "workspace": "autoresearch/test/scoper_lead/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

@@ -122,5 +122,5 @@
       "rationale": "This prompt tests the full depth of the frontend_developer_worker's verification capabilities: end-to-end interaction flow reasoning across a multi-step user journey, integration evidence for both the failure and success paths, accessibility verification at the attribute-resolution level (not just attribute presence), and adversarial self-checking against the agent's own verification tests. The multi-step error-correction flow is particularly challenging because it requires the agent to reason about sequential state transitions across multiple form submissions, which tests logical coherence across a complex interaction sequence."
     }
   ],
-  "workspace": "autoresearch/test/frontend_developer_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

@@ -122,5 +122,5 @@
       "rationale": "Tests partial acceptance with scope discipline against a bundled dispatch containing one valid research task and one out-of-archetype task. Part 1 (WAL mechanism investigation) is a textbook researcher task: mechanism extraction, first-principles analysis, primary source research. Part 2 (designing a production indexing strategy with migration SQL) is architecture and implementation work belonging to solution_architect_worker or backend_developer_worker. A correct researcher accepts Part 1, rejects Part 2 with an explanation that designing indexing strategies and producing migration SQL files exceeds its archetype boundary, and requests the lead to dispatch Part 2 separately to the appropriate archetype. The researcher does not silently drop Part 2 or attempt it partially."
     }
   ],
-  "workspace": "autoresearch/test/researcher_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

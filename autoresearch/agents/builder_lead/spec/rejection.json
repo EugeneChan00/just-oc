@@ -122,5 +122,5 @@
       "rationale": "This prompt tests rejection of a request to dispatch workers with overlapping write boundaries, despite the request framing the overlap as 'conceptually orthogonal.' The builder lead's Write-Boundary Partitioning doctrine requires that parallel dispatch only occurs when write boundaries are provably disjoint \u2014 and two workers modifying the same files (src/shared/types/api-response.ts and src/shared/utils/response-builder.ts) is a clear violation regardless of whether they touch different functions within those files. The builder lead must refuse parallel dispatch and propose sequential prompt-chained dispatch instead, where one worker completes first and its output becomes context for the second worker, preserving write-boundary integrity."
     }
   ],
-  "workspace": "autoresearch/test/builder_lead/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

@@ -126,5 +126,5 @@
       "id": "10"
     }
   ],
-  "workspace": "autoresearch/test/test_engineer_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

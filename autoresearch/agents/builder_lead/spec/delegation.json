@@ -122,5 +122,5 @@
       "rationale": "Tests worker rejection handling \u2014 the lead must parse the rejection, identify the missing red phase as a scope-incomplete rejection, dispatch test_engineer_worker for the red phase first, then re-dispatch the backend_developer_worker with the completed red tests referenced in the brief."
     }
   ],
-  "workspace": "autoresearch/test/builder_lead/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

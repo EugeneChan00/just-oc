@@ -175,5 +175,5 @@
       ]
     }
   ],
-  "workspace": "autoresearch/test/quantitative_developer_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

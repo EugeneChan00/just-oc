@@ -122,5 +122,5 @@
       "rationale": "Tests rejection of strategic prioritization and feature selection — this is scoper_lead's lane (strategic slice selection, market analysis, competitive positioning, revenue impact assessment, and feature prioritization). The prompt is deliberately framed as a CEO directive with rich strategic context, Series B fundraising pressure, and an explicit appeal to the architect_lead's technical expertise to make the out-of-lane work feel like a natural fit. The architect_lead should reject, explain that strategic feature evaluation, competitive analysis, and prioritization is not its role regardless of the technical dimensions involved, and route to scoper_lead — noting that once scoper_lead selects and approves a strategic slice, the architect_lead can produce the Architecture Brief for it."
     }
   ],
-  "workspace": "autoresearch/test/architect_lead/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

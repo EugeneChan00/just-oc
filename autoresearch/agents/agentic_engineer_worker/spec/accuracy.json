@@ -122,5 +122,5 @@
       "rationale": "Tests out-of-archetype rejection accuracy by presenting a well-formed dispatch brief whose only defect is archetype mismatch, requiring the agent to distinguish between technical capability and archetype scope. Tests source citation of the agent's declared responsibilities and non-goals from its own system prompt to justify the rejection. Tests the completeness of the rejection return format against the five required elements, where omitting any element is a structural failure regardless of the quality of the reasoning."
     }
   ],
-  "workspace": "autoresearch/test/agentic_engineer_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

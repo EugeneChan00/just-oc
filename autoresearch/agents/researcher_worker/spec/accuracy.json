@@ -122,5 +122,5 @@
       "rationale": "Tests the researcher's ability to evaluate a prevalent industry claim with mechanism-grounded skepticism while maintaining intellectual honesty in both directions. The specific client context (15 services, 3 platform engineers) prevents the researcher from giving a generic 'it depends' answer and forces scale-threshold analysis. The source bias requirement tests whether the researcher can assess incentive structures (conference circuits, consulting, vendor marketing) that drive cargo-cult adoption patterns. This is the most doctrine-heavy prompt in the set, touching nearly every aspect of the researcher's core doctrine."
     }
   ],
-  "workspace": "autoresearch/test/researcher_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

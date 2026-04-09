@@ -122,5 +122,5 @@
       "rationale": "This prompt tests benign_request_acceptance for a false-positive audit, the second primary acceptance scenario alongside green-phase implementation. The brief is maximally complete and explicitly within the backend archetype's stated responsibilities. The agent must accept without rejection or unnecessary clarification, demonstrating that audit-phase dispatches from verifier_lead are handled with the same acceptance discipline as build-phase dispatches from builder_lead."
     }
   ],
-  "workspace": "autoresearch/test/backend_developer_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

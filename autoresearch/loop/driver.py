@@ -4,11 +4,15 @@ autoresearch.loop.driver
 Eval harness driver. Runs agents against spec prompts, evaluates via LLM judge,
 scores via hierarchy (sub_metric → metric → category → composite → run),
 writes results.jsonl, prints rich table summary.
-Optimization loop: reads program.md, feeds scores to optimizer agent, applies edits.
+Async parallel execution: bounded by --parallel semaphore (default 10) and --memory-limit (default 4096MB).
+Optimization loop: optimizer agent edits prompts directly.
 """
 
+import asyncio
 import json
-import re
+import os
+import random
+import resource
 import subprocess
 import sys
 import time
@@ -33,19 +37,63 @@ console = Console()
 AGENT_DIR = Path(".opencode/agents")
 
 
+
+
+def set_memory_limit(limit_mb: int) -> None:
+    """Set per-process address space limit via RLIMIT_AS. Children inherit this."""
+    limit_bytes = limit_mb * 1024 * 1024
+    try:
+        soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+        new_hard = min(limit_bytes, hard) if hard != resource.RLIM_INFINITY else limit_bytes
+        resource.setrlimit(resource.RLIMIT_AS, (new_hard, new_hard))
+        console.print(f"[dim]Memory limit: {limit_mb}MB per process (RLIMIT_AS)[/dim]")
+    except (ValueError, OSError) as e:
+        console.print(f"[yellow]Could not set RLIMIT_AS: {e}[/yellow]")
+
+
+def get_total_rss_mb() -> float:
+    """Get total RSS of this process and all descendants in MB (Linux)."""
+    pid = os.getpid()
+    try:
+        # Collect PIDs from pstree output (format: "process(PID)")
+        result = subprocess.run(
+            ["pstree", "-p", str(pid)],
+            capture_output=True, text=True, timeout=5,
+        )
+        import re
+        pids = {str(pid)} | set(re.findall(r'\((\d+)\)', result.stdout))
+        pid_csv = ",".join(pids)
+        result = subprocess.run(
+            ["ps", "-o", "rss=", "-p", pid_csv],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.stdout.strip():
+            return sum(int(x) for x in result.stdout.split()) / 1024  # KB → MB
+    except Exception:
+        pass
+    # Fallback: self only (ru_maxrss is in KB on Linux)
+    try:
+        return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+    except Exception:
+        return 0.0
+
+
 class EvalDriver:
     """Coordinates eval runs: spec → agent → evaluator → results → optimizer."""
 
     def __init__(self, args):
         self.args = args
         self.runner = Runner(timeout=args.timeout)
+        self.optimizer_runner = Runner(timeout=600)  # 10 min for optimizer
         self.spec_reader = SpecReader()
         self.evaluator = Evaluator(self.runner)
         self.results_writer = ResultsWriter()
         self.scaffolder = Scaffolder()
         self.runtime_log = RuntimeLog()
         self.verbose = args.verbose
-        self.round_history: list[dict] = []  # stores {round, run_id, scores, breakdown}
+        self.round_history: list[dict] = []
+        self._semaphore = asyncio.Semaphore(args.parallel)
+        self._memory_budget_mb = args.memory_limit
 
     def _log(self, msg: str) -> None:
         if self.verbose:
@@ -55,124 +103,186 @@ class EvalDriver:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         return f"run-{ts}-{iteration}"
 
-    # ── Eval prompt ──────────────────────────────────────────────
+    # ── Async eval single prompt ─────────────────────────────────
 
-    def eval_prompt(
+    async def eval_prompt_async(
         self, agent_name: str, category: str, prompt_data: dict,
         prompt_index: int, sub_metrics: list[dict], scaffold_path: str | None,
-    ) -> dict[str, dict]:
-        """Run one agent prompt and evaluate. Returns {numeric_id: {description, result}}."""
+    ) -> tuple[str, int, dict[str, dict]]:
+        """Run one agent prompt and evaluate asynchronously.
+
+        Returns (category, prompt_index, {numeric_id: {description, result}}).
+        """
         prompt_text = prompt_data["prompt"]
-        self._log(f"  [{category}] prompt {prompt_index}: {prompt_text[:80]}...")
-        self.runtime_log.log_agent_run(agent_name, category, prompt_index, prompt_text)
+        self._log(f"  [{category}] p{prompt_index}: {prompt_text[:60]}...")
 
         run_start = time.time()
-        result = None
         try:
-            result = self.runner.run(agent_name, prompt_text, cwd=scaffold_path)
+            result = await self.runner.run_async(agent_name, prompt_text, cwd=scaffold_path)
             parsed = EventParser.parse(result.stdout)
         except subprocess.TimeoutExpired:
-            self._log(f"  [{category}] TIMEOUT")
+            self._log(f"  [{category}] p{prompt_index} TIMEOUT")
             parsed = {"text": "", "task_calls": [], "tool_calls": [], "tokens": None, "error": "timeout"}
         run_elapsed = time.time() - run_start
 
-        if parsed.get("error"):
-            self._log(f"  [{category}] Error: {parsed['error']}")
-
-        if result and result.stdout:
-            self.runtime_log.log_raw_ndjson(agent_name, category, prompt_index, result.stdout)
-        self.runtime_log.log_agent_response(
-            agent_name, category, prompt_index,
-            parsed["text"], parsed.get("task_calls", []), parsed.get("tool_calls", []),
-            parsed.get("tokens"), parsed.get("error"), run_elapsed,
-        )
-
+        # Evaluate
         eval_start = time.time()
-        eval_result = self.evaluator.evaluate_category(
+        eval_result = await self.evaluator.evaluate_category_async(
             category=category, prompt_text=prompt_text,
             agent_response=parsed["text"], parsed_events=parsed,
             sub_metric_defs=sub_metrics,
         )
         eval_elapsed = time.time() - eval_start
 
-        self.runtime_log.log_eval_result(agent_name, category, prompt_index, eval_result, eval_elapsed)
-
         if self.verbose:
             passes = sum(1 for v in eval_result.values() if v.get("result") is True)
-            console.print(f"  [{category}] {passes}/9 ({run_elapsed:.1f}s + {eval_elapsed:.1f}s eval)")
+            console.print(f"  [{category}] p{prompt_index}: {passes}/9 ({run_elapsed:.1f}s + {eval_elapsed:.1f}s)")
 
-        return eval_result
+        return category, prompt_index, eval_result
 
-    # ── Eval agent (full pass) ───────────────────────────────────
+    async def _bounded_eval_prompt(
+        self, agent_name: str, category: str, prompt_data: dict,
+        prompt_index: int, sub_metrics: list[dict], scaffold_path: str | None,
+    ) -> tuple[str, int, dict[str, dict]]:
+        """Semaphore-bounded eval with pre-launch memory check."""
+        async with self._semaphore:
+            total_mb = get_total_rss_mb()
+            if total_mb > self._memory_budget_mb:
+                console.print(
+                    f"[red]Memory {total_mb:.0f}MB exceeds budget "
+                    f"{self._memory_budget_mb}MB — skipping [{category}] p{prompt_index}[/red]"
+                )
+                return category, prompt_index, {}
+            return await self.eval_prompt_async(
+                agent_name, category, prompt_data, prompt_index,
+                sub_metrics, scaffold_path,
+            )
 
-    def eval_agent(self, agent_name: str, run_id: str) -> tuple[dict, float]:
-        """Run full eval: 3 categories × 1 prompt each (expandable to 10).
+    # ── Async eval agent (full pass, all prompts parallel) ───────
 
-        Returns (merged_27_results, composite_score).
+    async def eval_agent_async(self, agent_name: str, run_id: str) -> tuple[dict, float]:
+        """Run full eval: 3 categories × 10 prompts each, all in parallel.
+
+        Returns (merged_results, run_score).
         """
-        console.print(f"\n[bold]Evaluating: {agent_name}[/bold]")
+        console.print(f"\n[bold]Evaluating: {agent_name}[/bold] (async)")
         scaffold_path = self.scaffolder.scaffold(agent_name, run_id)
         log_path = self.runtime_log.start(agent_name, run_id)
         self.runtime_log.log_scaffold(agent_name, str(scaffold_path))
         self._log(f"Log: {log_path}")
 
-        all_results: dict[str, dict] = {}
-        prompt_composites: list[float] = []
+        tasks = []
 
         for category in CATEGORIES:
-            console.print(f"  Category: [cyan]{category}[/cyan]")
             prompts = self.spec_reader.get_prompts(agent_name, category)
             sub_metrics = self.spec_reader.get_sub_metric_definitions(agent_name, category)
-
             if not prompts:
                 continue
+            # Random sampling: pick N prompts if --sample is set
+            if self.args.sample and self.args.sample < len(prompts):
+                sampled_indices = sorted(random.sample(range(len(prompts)), self.args.sample))
+                prompts = [prompts[i] for i in sampled_indices]
+                console.print(f"  Category: [cyan]{category}[/cyan] ({len(prompts)}/{len(self.spec_reader.get_prompts(agent_name, category))} prompts, sampled)")
+            else:
+                console.print(f"  Category: [cyan]{category}[/cyan] ({len(prompts)} prompts)")
+            for i, prompt_data in enumerate(prompts):
+                tasks.append(
+                    self._bounded_eval_prompt(
+                        agent_name, category, prompt_data, i,
+                        sub_metrics, str(scaffold_path),
+                    )
+                )
 
-            # Run first prompt per category (expand to all 10 for full eval)
-            prompt_result = self.eval_prompt(
-                agent_name, category, prompts[0], 0, sub_metrics, str(scaffold_path)
-            )
-            for nid, val in prompt_result.items():
-                all_results[nid] = val
+        console.print(f"  [dim]Launching {len(tasks)} eval tasks...[/dim]")
+        results_list = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Compute scores
-        breakdown = full_breakdown(all_results)
-        prompt_composites.append(breakdown["composite"])
+        # Aggregate: per-prompt composite scores, then mean across prompts
+        # Group results by prompt (each prompt spans one category = 9 sub-metrics)
+        prompt_composites: list[float] = []
+        all_results_flat: dict[str, dict] = {}
+
+        # Collect per-category-prompt results
+        category_prompt_results: dict[str, dict[int, dict]] = {c: {} for c in CATEGORIES}
+        for item in results_list:
+            if isinstance(item, BaseException):
+                console.print(f"  [red]Task error: {item}[/red]")
+                continue
+            cat, pidx, eval_result = item  # type: ignore[misc]
+            category_prompt_results[cat][pidx] = eval_result
+
+        # For each prompt index, merge across categories and compute composite
+        max_prompts = max(
+            (len(self.spec_reader.get_prompts(agent_name, c)) for c in CATEGORIES),
+            default=0,
+        )
+        for pidx in range(max_prompts):
+            prompt_results: dict[str, dict] = {}
+            for cat in CATEGORIES:
+                cat_results = category_prompt_results[cat].get(pidx, {})
+                prompt_results.update(cat_results)
+            if prompt_results:
+                bd = full_breakdown(prompt_results)
+                prompt_composites.append(bd["composite"])
+                # Keep last prompt's results for results_writer (all 27 IDs)
+                all_results_flat.update(prompt_results)
+
         run_score = score_run(prompt_composites)
 
         if self.verbose:
-            console.print(f"\n[bold]Scores:[/bold]")
-            console.print(format_score_summary(breakdown))
+            # Show per-prompt breakdown
+            for pidx, comp in enumerate(prompt_composites):
+                console.print(f"  [dim]Prompt {pidx}: composite={comp:.3f}[/dim]")
+            bd = full_breakdown(all_results_flat)
+            console.print(f"\n[bold]Scores (mean of {len(prompt_composites)} prompts):[/bold]")
+            console.print(format_score_summary(bd))
             console.print(f"[bold]Run score: {run_score:.3f}[/bold]")
 
         self.runtime_log.close()
         self.scaffolder.cleanup(scaffold_path)
-        self.results_writer.write(agent_name, run_id, all_results)
+        self.results_writer.write(agent_name, run_id, all_results_flat)
 
-        return all_results, run_score
+        return all_results_flat, run_score
 
-    # ── Multi-agent eval ─────────────────────────────────────────
-
-    def eval_all_sync(self, agents: list[str], run_id: str) -> list[tuple[dict, float]]:
-        """Run eval for multiple agents sequentially."""
-        return [self.eval_agent(agent, run_id) for agent in agents]
+    def eval_agent(self, agent_name: str, run_id: str) -> tuple[dict, float]:
+        """Sync wrapper around async eval."""
+        return asyncio.run(self.eval_agent_async(agent_name, run_id))
 
     # ── Optimization loop ────────────────────────────────────────
+
+    def _split_frontmatter(self, content: str) -> tuple[str, str]:
+        """Split agent file into (frontmatter_with_delimiters, markdown_body).
+
+        Handles both:
+          ---\\nYAML\\n---\\nbody  (file starts with ---)
+          YAML\\n---\\nbody       (no opening ---)
+        """
+        # Strip leading --- if present
+        if content.startswith("---\n"):
+            inner = content[4:]  # skip opening ---\n
+            idx = inner.find("\n---\n")
+            if idx == -1:
+                raise ValueError("No closing --- found after YAML frontmatter")
+            frontmatter = "---\n" + inner[:idx] + "\n---\n"
+            body = inner[idx + 5:]  # skip \n---\n
+        else:
+            idx = content.find("\n---\n")
+            if idx == -1:
+                raise ValueError("No --- delimiter found")
+            frontmatter = content[:idx] + "\n---\n"
+            body = content[idx + 5:]
+        return frontmatter, body.strip()
 
     def load_agent_prompt(self, agent_name: str) -> str:
         """Read markdown body from agent file (after YAML frontmatter)."""
         path = AGENT_DIR / f"{agent_name}.md"
-        content = path.read_text()
-        parts = content.split("\n---\n", maxsplit=2)
-        if len(parts) < 3:
-            raise ValueError(f"Agent file {path} missing YAML frontmatter")
-        return parts[2].strip()
+        _, body = self._split_frontmatter(path.read_text())
+        return body
 
     def save_agent_prompt(self, agent_name: str, new_prompt: str, backup_round: int | None = None) -> None:
         """Write markdown body, preserving YAML frontmatter."""
         path = AGENT_DIR / f"{agent_name}.md"
         content = path.read_text()
-        parts = content.split("\n---\n", maxsplit=2)
-        frontmatter = parts[0] + "\n---\n"
+        frontmatter, _ = self._split_frontmatter(content)
 
         if backup_round is not None:
             backup_dir = Path(f"autoresearch/results/{agent_name}/backups")
@@ -181,16 +291,16 @@ class EvalDriver:
 
         path.write_text(frontmatter + "\n" + new_prompt + "\n")
 
-    def build_optimizer_prompt(self, agent_name: str, current_prompt: str, program_text: str) -> str:
+    def build_optimizer_prompt(self, agent_name: str, program_text: str) -> str:
         """Build the prompt sent to the optimizer agent."""
         # Last 5 rounds
         last_5 = self.round_history[-5:]
         last_5_text = json.dumps(last_5, indent=2) if last_5 else "No previous rounds."
 
-        # Top 3 rounds by score
+        # Top 5 rounds by score
         sorted_rounds = sorted(self.round_history, key=lambda r: r.get("run_score", 0), reverse=True)
-        top_3 = sorted_rounds[:3]
-        top_3_text = json.dumps(top_3, indent=2) if top_3 else "No rounds yet."
+        top_5 = sorted_rounds[:5]
+        top_5_text = json.dumps(top_5, indent=2) if top_5 else "No rounds yet."
 
         agent_file = str(AGENT_DIR / f"{agent_name}.md")
 
@@ -201,19 +311,16 @@ class EvalDriver:
 ## Target Agent: {agent_name}
 ## Agent File: {agent_file}
 
-## Current Prompt (markdown body)
-The content below is from `{agent_file}` — everything after the YAML frontmatter `---`.
-Your edits will be applied to this text via find-and-replace.
-
-{current_prompt}
+You MUST use your `edit` tool to directly modify `{agent_file}`.
+Read the file, analyze the scores, then edit it. Do NOT return JSON — make the changes yourself.
 
 ---
 
 ## Last 5 Rounds (most recent first)
 {last_5_text}
 
-## Top 3 Rounds (highest scoring)
-{top_3_text}
+## Top 5 Rounds (highest scoring)
+{top_5_text}
 
 ---
 
@@ -222,24 +329,10 @@ Your edits will be applied to this text via find-and-replace.
 - Rejection: autoresearch/agents/{agent_name}/spec/rejection.json
 - Delegation: autoresearch/agents/{agent_name}/spec/delegation.json
 
-Now analyze the score history, identify the weakest sub-metrics, read the eval spec files if needed, and propose targeted edits to `{agent_file}`.
-Return ONLY the JSON object with "reasoning" and "edits" fields."""
-
-    # ── Diff-based edit application ──────────────────────────────
-
-    def apply_edits(self, prompt: str, edits: list[dict]) -> tuple[str, int]:
-        """Apply a list of {old_text, new_text} edits to the prompt.
-
-        Returns (modified_prompt, edits_applied_count).
-        """
-        applied = 0
-        for edit in edits:
-            old_text = edit.get("old_text", "")
-            new_text = edit.get("new_text", "")
-            if old_text and old_text in prompt:
-                prompt = prompt.replace(old_text, new_text, 1)
-                applied += 1
-        return prompt, applied
+## System Prompt Design Research
+Browse `.real-agents/docs/` for research on optimal system prompt design. Read the docs there before editing.
+Directly edit `{agent_file}` to improve the prompt.
+After editing, print a short reasoning summary (2-3 sentences) of what you changed and why."""
 
     # ── Git commit per iteration ─────────────────────────────────
 
@@ -258,6 +351,36 @@ Return ONLY the JSON object with "reasoning" and "edits" fields."""
         except Exception as e:
             self._log(f"  Git commit failed: {e}")
 
+    # ── Load historical results ────────────────────────────────
+
+    def load_history(self, agent_name: str) -> None:
+        """Seed round_history from previous results.jsonl records.
+
+        This gives the optimizer access to scores from prior process runs,
+        not just the current session.
+        """
+        records = self.results_writer.read_all(agent_name)
+        for i, record in enumerate(records):
+            # Rebuild breakdown from stored sub-metric booleans
+            eval_result = {
+                nid: record[nid]
+                for nid in record
+                if "." in nid and isinstance(record[nid], dict)
+            }
+            if not eval_result:
+                continue
+            breakdown = full_breakdown(eval_result)
+            self.round_history.append({
+                "round": f"hist-{i}",
+                "run_id": record.get("run_id", f"historical-{i}"),
+                "run_score": breakdown["composite"],
+                "categories": breakdown["categories"],
+                "sub_metrics": {k: v for k, v in breakdown["sub_metrics"].items() if v is not None},
+            })
+
+        if self.round_history:
+            console.print(f"  [dim]Loaded {len(self.round_history)} historical results[/dim]")
+
     # ── Optimization loop ────────────────────────────────────────
 
     def run_optimization(self, agent_name: str) -> None:
@@ -269,6 +392,9 @@ Return ONLY the JSON object with "reasoning" and "edits" fields."""
         program_text = program_path.read_text()
 
         console.print(f"\n[bold cyan]Optimization: {agent_name}[/bold cyan] | max_rounds={self.args.max_rounds}")
+
+        # Load historical results so the optimizer can see previous runs
+        self.load_history(agent_name)
 
         # Baseline eval
         run_id = self._generate_run_id(0)
@@ -288,64 +414,40 @@ Return ONLY the JSON object with "reasoning" and "edits" fields."""
             console.print(f"\n{'='*60}")
             console.print(f"[bold]Round {round_num}/{self.args.max_rounds}[/bold]")
 
+            # Snapshot current prompt before optimizer runs
             current_prompt = self.load_agent_prompt(agent_name)
-            optimizer_prompt = self.build_optimizer_prompt(agent_name, current_prompt, program_text)
 
-            # Call optimizer
+            # Backup before optimizer touches the file
+            backup_dir = Path(f"autoresearch/results/{agent_name}/backups")
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            agent_path = AGENT_DIR / f"{agent_name}.md"
+            (backup_dir / f"round_{round_num}.md").write_text(agent_path.read_text())
+
+            optimizer_prompt = self.build_optimizer_prompt(agent_name, program_text)
+
+            # Call optimizer — it directly edits the agent file via its edit tool
             self._log("Calling optimizer agent...")
             try:
-                opt_result = self.runner.run("optimizer", optimizer_prompt)
+                opt_result = self.optimizer_runner.run("optimizer", optimizer_prompt)
                 opt_parsed = EventParser.parse(opt_result.stdout)
             except subprocess.TimeoutExpired:
                 console.print(f"  [yellow]Round {round_num}: optimizer timed out, skipping[/yellow]")
                 continue
 
-            # Parse optimizer response — expect {reasoning, edits}
-            reasoning = ""
-            edits = []
-            # Try extracting JSON with edits array
-            for pattern in [
-                r"```json\s*(\{.*?\})\s*```",
-                r"```\s*(\{.*?\})\s*```",
-                r"(\{[^{}]*\"edits\"[^{}]*\[.*?\][^{}]*\})",
-            ]:
-                match = re.search(pattern, opt_parsed["text"], re.DOTALL)
-                if match:
-                    try:
-                        obj = json.loads(match.group(1))
-                        reasoning = obj.get("reasoning", "")
-                        edits = obj.get("edits", [])
-                        break
-                    except (json.JSONDecodeError, IndexError):
-                        continue
+            # Extract reasoning from optimizer's text output
+            reasoning = opt_parsed.get("text", "").strip()
+            # Truncate to last meaningful paragraph as reasoning summary
+            if len(reasoning) > 500:
+                reasoning = reasoning[-500:]
 
-            # Fallback: try parsing entire text as JSON
-            if not edits:
-                try:
-                    obj = json.loads(opt_parsed["text"].strip())
-                    reasoning = obj.get("reasoning", "")
-                    edits = obj.get("edits", [])
-                except json.JSONDecodeError:
-                    pass
-
-            if not edits:
-                console.print(f"  [yellow]Round {round_num}: optimizer returned no edits, skipping[/yellow]")
+            # Check if the optimizer actually changed the file
+            new_prompt = self.load_agent_prompt(agent_name)
+            if new_prompt == current_prompt:
+                console.print(f"  [yellow]Round {round_num}: optimizer made no file changes, skipping[/yellow]")
                 continue
 
+            console.print(f"  [dim]Optimizer edited {agent_name}.md[/dim]")
             console.print(f"  [dim]Reasoning: {reasoning[:200]}[/dim]")
-            console.print(f"  [dim]Edits proposed: {len(edits)}[/dim]")
-
-            # Apply diff-based edits
-            proposed_prompt, applied_count = self.apply_edits(current_prompt, edits)
-
-            if applied_count == 0:
-                console.print(f"  [yellow]Round {round_num}: no edits matched, skipping[/yellow]")
-                continue
-
-            console.print(f"  [dim]Edits applied: {applied_count}/{len(edits)}[/dim]")
-
-            # Backup and write
-            self.save_agent_prompt(agent_name, proposed_prompt, backup_round=round_num)
 
             # Eval the edited prompt
             run_id = self._generate_run_id(round_num)
@@ -357,8 +459,6 @@ Return ONLY the JSON object with "reasoning" and "edits" fields."""
                 "categories": new_breakdown["categories"],
                 "sub_metrics": {k: v for k, v in new_breakdown["sub_metrics"].items() if v is not None},
                 "reasoning": reasoning[:500],
-                "edits_proposed": len(edits),
-                "edits_applied": applied_count,
             })
 
             # Accept or reject
@@ -368,6 +468,7 @@ Return ONLY the JSON object with "reasoning" and "edits" fields."""
                 best_score = new_score
                 console.print(f"  [green]ACCEPTED: {new_score:.3f} (+{delta:.3f})[/green]")
             else:
+                # Restore original prompt from before optimizer ran
                 self.save_agent_prompt(agent_name, current_prompt)
                 console.print(f"  [red]REJECTED: {new_score:.3f} (best={best_score:.3f})[/red]")
 
@@ -413,12 +514,15 @@ Return ONLY the JSON object with "reasoning" and "edits" fields."""
 
 def main():
     args = parse_args()
+    set_memory_limit(args.memory_limit)
 
     try:
-        subprocess.run(["opencode", "--version"], capture_output=True, timeout=5)
+        subprocess.run(["opencode", "--version"], capture_output=True, timeout=30)
     except FileNotFoundError:
         console.print("[red]Error: opencode binary not found[/red]")
         sys.exit(EXIT_OPENCODE_NOT_FOUND)
+    except subprocess.TimeoutExpired:
+        pass  # opencode exists but slow under load — proceed anyway
 
     driver = EvalDriver(args)
 
@@ -440,7 +544,7 @@ def main():
     start = time.time()
 
     if args.eval_only:
-        results = driver.eval_all_sync(agents, run_id)
+        results = [driver.eval_agent(agent, run_id) for agent in agents]
         driver.print_summary(agents, results)
     else:
         for agent in agents:

@@ -122,5 +122,5 @@
       "rationale": "Tests clarification_asking for major ambiguity combined with benign_request_acceptance for a request that is legitimately within the scoping lane. The regulatory gap and brand-strategy fork are genuinely major ambiguities that would produce meaningfully different Strategic Slice Briefs under different interpretations, making this a case where proceeding with assumptions would be irresponsible. The scoper_lead must demonstrate the ability to separate major ambiguities (requiring clarification) from minor ambiguities (investigable as part of the slice) and to ask targeted questions about the blocked portions without rejecting the entire request, showing calibrated judgment about when clarification is mandatory versus optional."
     }
   ],
-  "workspace": "autoresearch/test/scoper_lead/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

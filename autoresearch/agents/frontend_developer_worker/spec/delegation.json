@@ -122,5 +122,5 @@
       "rationale": "Tests direct handling for a simple, well-scoped task \u2014 the agent should complete the entire implementation directly without any sub-dispatch since the task is squarely within frontend competence and low complexity. This tests whether the agent can correctly identify that no delegation is needed and preserve its chaining budget."
     }
   ],
-  "workspace": "autoresearch/test/frontend_developer_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

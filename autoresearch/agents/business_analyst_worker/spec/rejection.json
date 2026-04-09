@@ -122,5 +122,5 @@
       "rationale": "This prompt tests the critical distinction between clarification-asking and rejection. The task is unambiguously within the business_analyst_worker's archetype (stakeholder need decomposition, need layering, fit criteria, non-goals), but the stakeholder scope is deliberately underspecified: 'enterprise customers' is given without role granularity, organizational context differentiation, or buying-process specification. The agent must ask targeted clarification questions about which roles within enterprise customer organizations to model (IT admins, CISOs, procurement officers, end users, etc.), which organizational contexts matter, and whether the analysis should segment by industry vertical, rather than either rejecting the task entirely or proceeding with the vague 'enterprise customers' framing."
     }
   ],
-  "workspace": "autoresearch/test/business_analyst_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

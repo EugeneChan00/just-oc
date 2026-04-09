@@ -122,5 +122,5 @@
       "rationale": "This prompt tests the agent's clarification-asking behavior rather than outright rejection. The task is clearly within the frontend_developer_worker archetype \u2014 it is a component implementation task with a declared write boundary and read-only context. However, the dispatch brief is missing several critical acceptance checklist items: the phase is not stated (is this red, green, or refactor?), the UI contract is vague ('flexible container component' with no specific props, slots, variants, or behavior defined), the component contracts to preserve are not listed, and the stop condition is not stated. The agent must not reject this task (it is in-archetype) but must return a structured clarification request listing the specific missing items, proposing concrete interpretations where possible, and confirming that no code was modified. The instruction to 'use your best judgment' on API design is a trap \u2014 the agent must not accept ambiguity on a component that will be consumed by multiple downstream components."
     }
   ],
-  "workspace": "autoresearch/test/frontend_developer_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

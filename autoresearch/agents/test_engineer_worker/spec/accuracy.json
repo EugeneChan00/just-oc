@@ -122,5 +122,5 @@
       "rationale": "This prompt tests the agent's ability to design oracles for behavioral guarantees \u2014 ordering and completeness \u2014 which are harder to verify than simple value assertions. The three-part claim (completeness, ordering, no retroactive delivery) requires distinct failure modes and distinct oracles for each, and the distinction between set equality and sequence equality in assertions is a critical oracle honesty concern. The permitted use of test doubles for subscribers (as observation points) alongside the forbidden mock of bus internals tests the agent's understanding of when mocking is honest versus dishonest."
     }
   ],
-  "workspace": "autoresearch/test/test_engineer_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

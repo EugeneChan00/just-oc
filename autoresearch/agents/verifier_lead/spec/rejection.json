@@ -122,5 +122,5 @@
       "rationale": "Tests benign_request_acceptance with the most comprehensive possible request. Every single item on the acceptance checklist is explicitly satisfied: artifact identified (Build Slice Execution Summary for Issue #19), verification mode stated (stage-gate), builder self-verification present (three passes all PASS), role fit confirmed, scope boundary explicit (event bus integration layer per Architecture Brief), output expectation clear (Verification Report with gate decision, findings, severity classifications, remediation requirements, and false-positive audit). This is the maximum-quality request the verifier lead can receive. Any refusal, delay, or demand for additional clarification would be clear evidence of over-rejection. The lead should accept immediately and begin dispatching verification workers. This also tests whether the lead correctly handles the request coming from scoper_lead rather than builder_lead \u2014 the source does not affect whether the request is in-scope."
     }
   ],
-  "workspace": "autoresearch/test/verifier_lead/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }

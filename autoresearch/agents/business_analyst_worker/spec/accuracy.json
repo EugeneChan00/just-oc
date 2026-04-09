@@ -122,5 +122,5 @@
       "rationale": "Tests multi-stakeholder modeling discipline, which is a core analytical competency. The two groups have superficially aligned interests (better knowledge base) but fundamentally different needs, interaction patterns, and latent desires. The requirement to maintain analytical separation tests whether the agent conflates stakeholders for tidiness. The cross-group conflict analysis tests whether the agent can identify genuine tensions without resolving them through solution proposals, which would violate the non-goal discipline. The author-versus-consumer dynamic creates a natural tension that the agent must surface rather than smooth over."
     }
   ],
-  "workspace": "autoresearch/test/business_analyst_worker/run-<run-number>-<run-iteration>/"
+  "workspace": "run-<run-number>-<run-iteration>"
 }
