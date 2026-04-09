@@ -249,24 +249,33 @@ interface BackgroundManager {
 
 ## File Layout Reference
 
-### Plugin entry point
+### Plugin entry point & config
 ```
-.opencode/plugins/background_task.ts    # Entry point — exports Plugin
+.opencode/opencode.json                 # Plugin registration: file://./plugins/src/background_tasks/index.ts
+plugins/src/background_tasks/index.ts   # Entry point — exports default Plugin
 ```
 
 ### Isolated source
 ```
 plugins/src/background_tasks/
+├── index.ts                            # Plugin entry point (SimpleBackgroundManager + tool wiring)
 ├── tools/                              # Tool definitions (create-background-*.ts)
 ├── features/
-│   ├── background-agent/               # BackgroundManager interface + types
+│   ├── background-agent/
+│   │   ├── manager-context.ts          # Shared ManagerContext type for submodules
+│   │   ├── manager-interface.ts        # BackgroundManager interface contract
+│   │   ├── task-lifecycle.ts           # Launch, start, track, resume, cancel, complete (~780 lines)
+│   │   ├── event-handler.ts           # Event handling, polling, session validation (~514 lines)
+│   │   ├── task-notification.ts       # Parent notifications, queue management (~249 lines)
+│   │   ├── types.ts                    # BackgroundTask, LaunchInput types
+│   │   └── index.ts                    # Re-exports
 │   ├── tool-metadata-store/            # Tool metadata persistence
 │   ├── hook-message-injector/          # Message context resolution (stub)
 │   └── claude-code-session-state/      # Session agent tracking (stub)
 └── shared/                             # Logger, cursor, display names, storage paths
 ```
 
-### Upstream reference (submodule)
+### Upstream reference (git submodule)
 ```
 plugin/oh-my-openagent/                 # Full oh-my-openagent source (git submodule)
 └── src/
@@ -277,9 +286,15 @@ plugin/oh-my-openagent/                 # Full oh-my-openagent source (git submo
     ├── plugin-dispose.ts               # Cleanup lifecycle
     ├── plugin-config.ts                # Config loading (Zod)
     ├── tools/background-task/          # Original background task tools
-    ├── features/background-agent/      # Full BackgroundManager implementation
+    ├── features/background-agent/
+    │   └── manager.ts                  # Full BackgroundManager (2217 lines) — reference impl
     └── shared/                         # Shared utilities
 ```
+
+> **Note**: The full `BackgroundManager` class lives in the submodule at
+> `plugin/oh-my-openagent/src/features/background-agent/manager.ts`.
+> Our isolated source splits its logic into `task-lifecycle.ts`, `event-handler.ts`,
+> and `task-notification.ts` submodules.
 
 ---
 
