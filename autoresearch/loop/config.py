@@ -35,6 +35,8 @@ def build_argparser() -> argparse.ArgumentParser:
                    help="Timeout per agent run in seconds (default: 300)")
     p.add_argument("--sample", type=int, default=None,
                    help="Randomly sample N prompts per category instead of all 10 (e.g., --sample 3)")
+    p.add_argument("--no-wsl-cap", action="store_true", dest="no_wsl_cap",
+                   help="Disable automatic parallel cap on WSL (use at your own risk)")
     return p
 
 

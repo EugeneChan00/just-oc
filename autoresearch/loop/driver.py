@@ -36,7 +36,15 @@ from autoresearch.loop.config import parse_args, EXIT_COMPLETED, EXIT_AGENT_NOT_
 console = Console()
 AGENT_DIR = Path(".opencode/agents")
 
+# WSL has tighter memory/process limits; detect it once at import time.
+_IS_WSL = False
+try:
+    _IS_WSL = "microsoft" in Path("/proc/version").read_text().lower()
+except Exception:
+    pass
 
+# Maximum parallel workers that are safe under WSL's constrained resources.
+_WSL_MAX_PARALLEL = 4
 
 
 def set_memory_limit(limit_mb: int) -> None:
@@ -51,16 +59,30 @@ def set_memory_limit(limit_mb: int) -> None:
         console.print(f"[yellow]Could not set RLIMIT_AS: {e}[/yellow]")
 
 
+_rss_cache: tuple[float, float] = (0.0, 0.0)  # (timestamp, value_mb)
+_RSS_CACHE_TTL = 2.0  # seconds — avoid spawning pstree/ps on every task
+
+
 def get_total_rss_mb() -> float:
-    """Get total RSS of this process and all descendants in MB (Linux)."""
+    """Get total RSS of this process and all descendants in MB (Linux).
+
+    Results are cached for ``_RSS_CACHE_TTL`` seconds so parallel tasks
+    don't each spawn extra pstree/ps subprocesses (important on WSL).
+    """
+    global _rss_cache
+    now = time.time()
+    if now - _rss_cache[0] < _RSS_CACHE_TTL:
+        return _rss_cache[1]
+
     pid = os.getpid()
+    mb = 0.0
     try:
         # Collect PIDs from pstree output (format: "process(PID)")
+        import re
         result = subprocess.run(
             ["pstree", "-p", str(pid)],
             capture_output=True, text=True, timeout=5,
         )
-        import re
         pids = {str(pid)} | set(re.findall(r'\((\d+)\)', result.stdout))
         pid_csv = ",".join(pids)
         result = subprocess.run(
@@ -68,14 +90,16 @@ def get_total_rss_mb() -> float:
             capture_output=True, text=True, timeout=5,
         )
         if result.stdout.strip():
-            return sum(int(x) for x in result.stdout.split()) / 1024  # KB → MB
+            mb = sum(int(x) for x in result.stdout.split()) / 1024  # KB → MB
     except Exception:
-        pass
-    # Fallback: self only (ru_maxrss is in KB on Linux)
-    try:
-        return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
-    except Exception:
-        return 0.0
+        # Fallback: self only (ru_maxrss is in KB on Linux)
+        try:
+            mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+        except Exception:
+            mb = 0.0
+
+    _rss_cache = (now, mb)
+    return mb
 
 
 class EvalDriver:
@@ -144,15 +168,32 @@ class EvalDriver:
         self, agent_name: str, category: str, prompt_data: dict,
         prompt_index: int, sub_metrics: list[dict], scaffold_path: str | None,
     ) -> tuple[str, int, dict[str, dict]]:
-        """Semaphore-bounded eval with pre-launch memory check."""
+        """Semaphore-bounded eval with pre-launch memory check and backpressure.
+
+        Instead of silently skipping when memory is high, waits up to 60 s
+        for memory to drop below budget before giving up.
+        """
         async with self._semaphore:
-            total_mb = get_total_rss_mb()
-            if total_mb > self._memory_budget_mb:
+            # Backpressure: wait for memory to come down instead of skipping
+            for attempt in range(6):  # up to 6 × 10 s = 60 s
+                total_mb = get_total_rss_mb()
+                if total_mb <= self._memory_budget_mb:
+                    break
+                if attempt == 5:
+                    console.print(
+                        f"[red]Memory {total_mb:.0f}MB still exceeds budget "
+                        f"{self._memory_budget_mb}MB after 60s — skipping [{category}] p{prompt_index}[/red]"
+                    )
+                    return category, prompt_index, {}
                 console.print(
-                    f"[red]Memory {total_mb:.0f}MB exceeds budget "
-                    f"{self._memory_budget_mb}MB — skipping [{category}] p{prompt_index}[/red]"
+                    f"[yellow]Memory {total_mb:.0f}MB > budget {self._memory_budget_mb}MB "
+                    f"— waiting 10s before [{category}] p{prompt_index}[/yellow]"
                 )
-                return category, prompt_index, {}
+                await asyncio.sleep(10)
+
+            # Small stagger to avoid thundering-herd subprocess spawns
+            await asyncio.sleep(0.2)
+
             return await self.eval_prompt_async(
                 agent_name, category, prompt_data, prompt_index,
                 sub_metrics, scaffold_path,
@@ -514,6 +555,17 @@ After editing, print a short reasoning summary (2-3 sentences) of what you chang
 
 def main():
     args = parse_args()
+
+    # Auto-cap parallelism on WSL to prevent resource exhaustion & crashes
+    if _IS_WSL and args.parallel > _WSL_MAX_PARALLEL:
+        console.print(
+            f"[yellow]WSL detected — capping --parallel from {args.parallel} "
+            f"to {_WSL_MAX_PARALLEL} to prevent crashes (override with "
+            f"--parallel {args.parallel} --no-wsl-cap)[/yellow]"
+        )
+        if not getattr(args, "no_wsl_cap", False):
+            args.parallel = _WSL_MAX_PARALLEL
+
     set_memory_limit(args.memory_limit)
 
     try:
