@@ -34,6 +34,7 @@ export function createBackgroundTask(
       prompt: tool.schema.string().describe("Full detailed prompt for the agent"),
       agent: agentSchema,
       background: tool.schema.boolean().describe("Run in background (true) or block until complete (false). Background mode returns immediately and notifies on completion."),
+      session_id: tool.schema.string().optional().describe("Only set this to resume a previous task. Pass a prior session_id/task_id to continue the same subagent session instead of creating a fresh one."),
     },
     async execute(args: BackgroundTaskArgs, toolContext) {
       const ctx = toolContext as ToolContextWithMetadata
@@ -70,6 +71,118 @@ export function createBackgroundTask(
                 ...(prevMessage.model.variant ? { variant: prevMessage.model.variant } : {}),
               }
             : undefined
+
+        // Resume existing session if session_id provided
+        if (args.session_id) {
+          const resumedTask = await manager.resume({
+            sessionId: args.session_id,
+            prompt: args.prompt,
+            parentSessionID: ctx.sessionID,
+            parentMessageID: ctx.messageID,
+            parentModel,
+            parentAgent,
+          })
+
+          const bgMeta = {
+            title: args.description,
+            metadata: {
+              ...(resumedTask.sessionID ? { sessionId: resumedTask.sessionID } : {}),
+            },
+          }
+          ctx.metadata?.(bgMeta)
+
+          if (ctx.callID) {
+            storeToolMetadata(ctx.sessionID, ctx.callID, bgMeta)
+          }
+
+          if (args.background) {
+            return `Background task resumed successfully.
+
+Task ID: ${resumedTask.id}
+Session ID: ${resumedTask.sessionID ?? "(unknown)"}
+Description: ${resumedTask.description}
+Agent: ${resumedTask.agent}
+Status: ${resumedTask.status}
+
+System notifies on completion. Use \`background_output\` with task_id="${resumedTask.id}" to check.
+Use \`background_cancel\` with taskId="${resumedTask.id}" to terminate.
+
+Do NOT call background_output now. Wait for <system-reminder> notification first.`
+          }
+
+          // Synchronous mode: block until resumed task completes
+          const abortHandler = () => {
+            manager.cancelTask(resumedTask.id, {
+              source: "user-abort",
+              abortSession: true,
+              skipNotification: true,
+            })
+          }
+          ctx.abort?.addEventListener("abort", abortHandler)
+
+          const POLL_INTERVAL_MS = 1000
+          const POLL_TIMEOUT_MS = 10 * 60 * 1000
+          const pollStart = Date.now()
+          try {
+            while (Date.now() - pollStart < POLL_TIMEOUT_MS) {
+              if (ctx.abort?.aborted) break
+              const current = manager.getTask(resumedTask.id)
+              if (!current) break
+              if (current.status === "completed" || current.status === "error" || current.status === "cancelled" || current.status === "interrupt") {
+                break
+              }
+              await delay(POLL_INTERVAL_MS)
+            }
+          } finally {
+            ctx.abort?.removeEventListener("abort", abortHandler)
+          }
+
+          const finalTask = manager.getTask(resumedTask.id)
+          const finalStatus = finalTask?.status ?? "unknown"
+          const finalSessionId = finalTask?.sessionID ?? resumedTask.sessionID
+
+          if (ctx.abort?.aborted && finalTask?.status === "running") {
+            await manager.cancelTask(resumedTask.id, {
+              source: "user-abort",
+              abortSession: true,
+              skipNotification: true,
+            })
+          }
+
+          if (finalSessionId) {
+            ctx.metadata?.({
+              title: args.description,
+              metadata: { sessionId: finalSessionId },
+            })
+          }
+
+          let resultText = ""
+          if (finalSessionId && (finalStatus === "completed" || finalStatus === "error")) {
+            try {
+              const messagesResp = await client.session.messages({ path: { id: finalSessionId } })
+              const messages: Array<Record<string, unknown>> = ((messagesResp as any).data ?? (messagesResp as any).response ?? []) as any
+              for (let i = messages.length - 1; i >= 0; i--) {
+                const m = messages[i] as any
+                const role = m.role ?? m.info?.role
+                if (role !== "assistant") continue
+                const parts = m.parts ?? []
+                const textPart = parts.findLast?.((p: any) => p.type === "text" && p.text?.trim())
+                if (textPart) {
+                  resultText = textPart.text
+                  break
+                }
+              }
+            } catch {}
+          }
+
+          return [
+            `task_id: ${finalSessionId ?? resumedTask.id} (for resuming to continue this task if needed)`,
+            "",
+            "<task_result>",
+            resultText || `Task ${finalStatus}${finalTask?.error ? `: ${finalTask.error}` : ""}`,
+            "</task_result>",
+          ].join("\n")
+        }
 
         const task = await manager.launch({
           description: args.description,
