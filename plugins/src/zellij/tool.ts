@@ -91,6 +91,7 @@ Use domain + action + params for structured calls, OR query for raw CLI passthro
 - run_command(command, direction?) — Run command in new pane
 - edit_file(file_path) — Edit file in zellij
 - switch_mode(mode) — Switch mode (locked|pane|tab|resize|move|search|session)
+- snapshot — **One-call mega query**: returns ALL sessions, tabs, and panes as JSON. Use this first to understand the full Zellij state before any management operations.
 - health_check — Check zellij version/health
 - clear_cache — Clear cache
 - cache_stats — Get cache stats
@@ -104,6 +105,15 @@ Use domain + action + params for structured calls, OR query for raw CLI passthro
 - create_llm_wrapper(wrapper_name, llm_command, detect_marker?, timeout_ms?) — Create LLM completion wrapper
 - cleanup — Remove all detection temp files
 
+### exec
+- start(session?, tab?, pane?, direction?, cwd?) — Start shell bridge listener in a pane. Targets existing focused pane by default; set direction (right|down) to create a new pane. session/tab/pane navigate to target before injecting.
+- run(command, session?, timeout_ms?) — Execute command in bridge, returns JSON {request_id, stdout, stderr, exit_code, cwd, duration_ms}. Shell state (cwd, env, virtualenvs) persists across calls.
+- status(session?) — Check if bridge listener is alive
+- stop(session?) — Stop bridge listener and clean up
+
+## AGENT CONTEXT (self-termination prevention)
+Responses from session, pane, tab, and exec domains include an [AGENT CONTEXT] footer with the Zellij session and pane_id where the agent process is running. NEVER kill, close, or delete the session/pane shown in this context — doing so terminates the agent itself.
+
 ## QUERY (raw passthrough)
 Pass any zellij CLI args directly. Examples:
   query: "list-sessions"
@@ -111,12 +121,28 @@ Pass any zellij CLI args directly. Examples:
   query: "action resize increase left"
   query: "--session mySession action dump-layout"`
 
+/** Domains whose responses include agent context for self-termination prevention. */
+const CONTEXT_DOMAINS = new Set(["session", "pane", "tab", "exec"])
+
+/**
+ * Returns the Zellij session/pane the agent process is running in.
+ * Zellij sets these env vars for all child processes inside a pane.
+ */
+function getAgentContext(): string {
+  const session = process.env.ZELLIJ_SESSION_NAME
+  const paneId = process.env.ZELLIJ_PANE_ID
+  if (!session) return ""
+  const parts = [`session="${session}"`]
+  if (paneId) parts.push(`pane_id=${paneId}`)
+  return `\n\n[AGENT CONTEXT — DO NOT TERMINATE] ${parts.join(", ")}`
+}
+
 export function createZellijTool(): ToolDefinition {
   return tool({
     description: TOOL_DESCRIPTION,
     args: {
       domain: tool.schema
-        .enum(["session", "pane", "tab", "pipe", "plugin", "layout", "utility", "detection"])
+        .enum(["session", "pane", "tab", "pipe", "plugin", "layout", "utility", "detection", "exec"])
         .optional()
         .describe("The zellij domain to operate on (omit if using query)"),
       action: tool.schema
@@ -148,7 +174,14 @@ export function createZellijTool(): ToolDefinition {
           return `[ERROR] Unknown domain: "${args.domain}"`
         }
 
-        return await handler(args.action, args.params ?? {})
+        const result = await handler(args.action, args.params ?? {})
+
+        // Append agent context to session/pane/tab/exec responses
+        if (CONTEXT_DOMAINS.has(args.domain)) {
+          return result + getAgentContext()
+        }
+
+        return result
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         return `[ERROR] ${message}`
