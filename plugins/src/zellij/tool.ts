@@ -91,6 +91,7 @@ Use domain + action + params for structured calls, OR query for raw CLI passthro
 - run_command(command, direction?) — Run command in new pane
 - edit_file(file_path) — Edit file in zellij
 - switch_mode(mode) — Switch mode (locked|pane|tab|resize|move|search|session)
+- snapshot — **One-call mega query**: returns ALL sessions, tabs, and panes as JSON. Use this first to understand the full Zellij state before any management operations.
 - health_check — Check zellij version/health
 - clear_cache — Clear cache
 - cache_stats — Get cache stats
