@@ -1,4 +1,4 @@
-import type { BackgroundTask, LaunchInput } from "./types"
+import type { BackgroundTask, LaunchInput, ResumeInput } from "./types"
 
 /**
  * Interface for BackgroundManager as required by the background task tools.
@@ -7,6 +7,7 @@ import type { BackgroundTask, LaunchInput } from "./types"
  */
 export interface BackgroundManager {
   launch(input: LaunchInput): Promise<BackgroundTask>
+  resume(input: ResumeInput): Promise<BackgroundTask>
   getTask(taskId: string): BackgroundTask | undefined
   getAllDescendantTasks(sessionID: string): BackgroundTask[]
   cancelTask(

@@ -1,7 +1,7 @@
 import type { PluginInput } from "@opencode-ai/plugin"
 
 import type { BackgroundManager } from "./manager-interface"
-import type { BackgroundTask, LaunchInput, BackgroundTaskStatus } from "./types"
+import type { BackgroundTask, LaunchInput, ResumeInput, BackgroundTaskStatus } from "./types"
 import { formatDuration } from "./duration-formatter"
 import { isActiveSessionStatus } from "./session-status-classifier"
 import { buildBackgroundTaskNotificationText } from "./background-task-notification-template"
@@ -86,6 +86,55 @@ export class WorkingBackgroundManager implements BackgroundManager {
     }
 
     return true
+  }
+
+  async resume(input: ResumeInput): Promise<BackgroundTask> {
+    let existingTask: BackgroundTask | undefined
+    for (const task of this.tasks.values()) {
+      if (task.sessionID === input.sessionId) {
+        existingTask = task
+        break
+      }
+    }
+    if (!existingTask) throw new Error(`Task not found for session: ${input.sessionId}`)
+    if (!existingTask.sessionID) throw new Error(`Task has no sessionID: ${existingTask.id}`)
+    if (existingTask.status === "running") return existingTask
+
+    existingTask.status = "running"
+    existingTask.completedAt = undefined
+    existingTask.error = undefined
+    existingTask.parentSessionID = input.parentSessionID
+    existingTask.parentMessageID = input.parentMessageID
+    existingTask.parentModel = input.parentModel
+    existingTask.parentAgent = input.parentAgent
+    if (input.parentTools) existingTask.parentTools = input.parentTools
+    existingTask.startedAt = new Date()
+    existingTask.progress = {
+      toolCalls: existingTask.progress?.toolCalls ?? 0,
+      lastUpdate: new Date(),
+    }
+
+    const pending = this.pendingByParent.get(input.parentSessionID) ?? new Set()
+    pending.add(existingTask.id)
+    this.pendingByParent.set(input.parentSessionID, pending)
+
+    this.startPolling()
+
+    this.client.session.promptAsync({
+      path: { id: existingTask.sessionID },
+      body: {
+        agent: existingTask.agent,
+        parts: [{ type: "text" as const, text: input.prompt }],
+      },
+    }).catch((error) => {
+      const msg = error instanceof Error ? error.message : String(error)
+      existingTask!.status = "error"
+      existingTask!.error = msg
+      existingTask!.completedAt = new Date()
+      if (existingTask!.background) void this.notifyParent(existingTask!)
+    })
+
+    return existingTask
   }
 
   // --- Internal ---

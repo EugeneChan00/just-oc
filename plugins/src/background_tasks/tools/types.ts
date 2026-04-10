@@ -3,6 +3,7 @@ export interface BackgroundTaskArgs {
   prompt: string
   agent: string
   background: boolean
+  session_id?: string
 }
 
 export interface BackgroundOutputArgs {
