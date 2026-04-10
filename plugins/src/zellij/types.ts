@@ -7,6 +7,7 @@ export type Domain =
   | "layout"
   | "utility"
   | "detection"
+  | "exec"
 
 export type Params = Record<string, unknown>
 
