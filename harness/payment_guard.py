@@ -147,13 +147,16 @@ def _emit_audit_log(params: ExtractedPaymentParams, result: ValidationResult) ->
 # ------------------------------------------------------------------------------
 
 # Regex patterns for extracting candidate amount strings from natural language.
+# All patterns use str-against-str matching — no LLM, no float drift.
+# Commas in numbers (e.g., $1,000 or 1,000.00) are handled by stripping
+# commas before Decimal parsing so that "$1,000" and "1000" are equivalent.
 _AMOUNT_PATTERNS: list[tuple[str, str]] = [
-    # ($500), ($500.00), ($500.0)
-    (r"\$\s*(\d+(?:\.\d{1,2})?)", "dollar"),
-    # 500$, 500.00$ (space-tolerant)
-    (r"(\d+(?:\.\d{1,2})?)\s*\$", "dollar"),
-    # Plain numbers: 500, 500.00, 500.0
-    (r"(?<!\w)(\d+(?:\.\d{1,2})?)(?!\w)", "plain"),
+    # ($500), ($500.00), ($500.0), ($1,000), ($1,000.50)
+    (r"\$\s*([\d,]+(?:\.\d{1,2})?)", "dollar"),
+    # 500$, 500.00$ (space-tolerant); 1,000$
+    (r"([\d,]+(?:\.\d{1,2})?)\s*\$", "dollar"),
+    # Plain numbers: 500, 500.00, 500.0, 1,000, 1,000.50
+    (r"(?<!\w)([\d,]+(?:\.\d{1,2})?)(?!\w)", "plain"),
     # Words: five hundred, fifty (singular/plural handled by simple replace)
     # Added dynamically below.
 ]
@@ -256,7 +259,9 @@ def _extract_candidate_decimals(instruction: str) -> set[Decimal]:
     for pattern, _ in _AMOUNT_PATTERNS:
         for match in re.finditer(pattern, instruction, re.IGNORECASE):
             try:
-                val = Decimal(match.group(1))
+                # Strip commas so "$1,000" and "1,000.00" parse correctly as Decimal
+                raw = match.group(1).replace(",", "")
+                val = Decimal(raw)
                 if val > 0:
                     candidates.add(val)
             except (InvalidOperation, ValueError):

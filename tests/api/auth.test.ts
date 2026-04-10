@@ -100,7 +100,79 @@ async function testNoAuthorizationHeader(): Promise<void> {
 }
 
 /**
- * Test 2: Request with malformed Authorization header (missing 'Bearer' prefix)
+ * Test 2a: Request with empty Authorization header value
+ *
+ * Falsification: If the endpoint accepts empty Authorization header values,
+ * it would return a status other than 401.
+ *
+ * Oracle: HTTP 401 status code in response.
+ *
+ * This test would fail if empty header values are accepted because
+ * the response would have status 200/404/500 instead of 401.
+ *
+ * Coverage trace: Forces the middleware path where auth header presence is checked
+ * but the value is empty. The middleware must treat an empty value as unauthenticated.
+ */
+async function testEmptyAuthorizationHeader(): Promise<void> {
+  console.log('TEST 2a: Request with empty Authorization header value');
+
+  const response = await makeRequest('/api/users', {
+    'Authorization': ''
+  });
+
+  console.log(`  Status: ${response.statusCode}`);
+  console.log(`  Expected: 401`);
+
+  if (response.statusCode !== 401) {
+    throw new Error(
+      `Expected HTTP 401 for request with empty Authorization header, ` +
+      `got ${response.statusCode} instead. ` +
+      `This means empty auth headers are being accepted!`
+    );
+  }
+  console.log('  PASS: Correctly returned 401');
+}
+
+/**
+ * Test 2b: Request with non-Bearer scheme (Basic authentication)
+ *
+ * Falsification: If the endpoint accepts non-Bearer schemes like Basic,
+ * it would return a status other than 401.
+ *
+ * Oracle: HTTP 401 status code in response.
+ *
+ * This test would fail if Basic auth is accepted because
+ * the response would have status 200/404/500 instead of 401.
+ * The endpoint must reject non-Bearer schemes with 401.
+ *
+ * Coverage trace: Forces the middleware path where scheme type is validated.
+ * The middleware must check for 'Bearer ' scheme specifically and reject Basic.
+ */
+async function testNonBearerScheme(): Promise<void> {
+  console.log('TEST 2b: Request with non-Bearer scheme (Basic)');
+
+  // Basic auth example: base64("username:password")
+  const basicAuth = 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=';
+
+  const response = await makeRequest('/api/users', {
+    'Authorization': basicAuth
+  });
+
+  console.log(`  Status: ${response.statusCode}`);
+  console.log(`  Expected: 401`);
+
+  if (response.statusCode !== 401) {
+    throw new Error(
+      `Expected HTTP 401 for request with Basic auth scheme, ` +
+      `got ${response.statusCode} instead. ` +
+      `This means non-Bearer schemes are being accepted!`
+    );
+  }
+  console.log('  PASS: Correctly returned 401');
+}
+
+/**
+ * Test 2c: Request with malformed Authorization header (missing 'Bearer' prefix)
  *
  * Falsification: If the endpoint accepts malformed tokens,
  * it would return a status other than 401.
@@ -228,6 +300,8 @@ async function runTests(): Promise<void> {
 
   const tests = [
     { name: 'No Authorization header', fn: testNoAuthorizationHeader },
+    { name: 'Empty Authorization header value', fn: testEmptyAuthorizationHeader },
+    { name: 'Non-Bearer scheme (Basic auth)', fn: testNonBearerScheme },
     { name: 'Malformed Authorization header', fn: testMalformedAuthorizationHeader },
     { name: 'Expired JWT token', fn: testExpiredJwtToken },
     { name: 'JWT signed by wrong key', fn: testWrongSigningKey }

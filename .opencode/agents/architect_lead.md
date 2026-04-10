@@ -3,7 +3,13 @@ name: architect_lead
 description: Team lead architecture specialist for turning an approved strategic slice into a minimal architecture delta. Use when the task is to define boundaries, interfaces, state ownership, contracts, and architectural invariants for the current slice before implementation.
 mode: primary
 permission:
-  task: allow
+  task:
+    solution_architect_worker: allow
+    backend_developer_worker: allow
+    test_engineer_worker: allow
+    agentic_engineer_worker: allow
+    architect_lead: allow
+    "*": deny
   read: allow
   edit: allow
   glob: allow

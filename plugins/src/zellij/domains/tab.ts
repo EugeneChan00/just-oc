@@ -1,4 +1,4 @@
-import { execZellij, sanitize } from "../exec"
+import { execZellij, sanitize, queryFocusedState } from "../exec"
 import type { Params } from "../types"
 import { Validator } from "../utils/validator"
 
@@ -12,7 +12,9 @@ export async function handleTab(action: string, params: Params): Promise<string>
         cmd += ` --name "${v.sanitized}"`
       }
       if (params.layout) cmd += ` --layout ${sanitize(params.layout)}`
-      return execZellij(cmd)
+      await execZellij(cmd)
+      const state = await queryFocusedState()
+      return `Tab created.\n${state}`
     }
 
     case "close":

@@ -2,7 +2,12 @@
 name: solution_architect_worker
 description: Worker archetype specialized in architectural option exploration, tradeoff analysis, integration strategy, lens-disciplined structural reasoning, and drag-vs-gain assessment. Dispatched by team leads via the `task` tool to perform a single narrow vertical architectural analysis with high precision.
 permission:
-  task: allow
+  task:
+    backend_developer_worker: allow
+    frontend_developer_worker: allow
+    test_engineer_worker: allow
+    researcher_worker: allow
+    "*": deny
   read: allow
   edit: allow
   glob: allow

@@ -19,7 +19,7 @@ from enum import Enum
 from typing import Any, Callable, Optional
 
 from src.core.recursive_dispatcher import RecursiveDispatcher
-from src.agents.sub_agent_registry import SubAgentRegistry
+from src.agents.sub_agent_registry import SubAgentRegistry, RegistryStatus
 from src.core.termination_guard import TerminationGuard
 
 
@@ -126,6 +126,14 @@ class RecursiveEventLoop:
 
         return synthesis
 
+    def _ensure_context(self) -> OrchestrationContext:
+        """Ensure context is initialized. Lazily initializes if not yet set."""
+        if self._context is None:
+            self._context = OrchestrationContext(
+                task_id=f"orchestration_{time.time()}", task_payload=None
+            )
+        return self._context
+
     async def spawn_sub_agent(
         self, agent_type: str, task_payload: Any, instance_id: Optional[str] = None
     ) -> str:
@@ -140,11 +148,13 @@ class RecursiveEventLoop:
         Returns:
             Agent instance ID
         """
+        ctx = self._ensure_context()
+
         if instance_id is None:
-            instance_id = f"{agent_type}_{time.time()}_{len(self._context.sub_agents)}"
+            instance_id = f"{agent_type}_{time.time()}_{len(ctx.sub_agents)}"
 
         # Register the sub-agent
-        self._context.sub_agents[instance_id] = SubAgentResult(
+        ctx.sub_agents[instance_id] = SubAgentResult(
             agent_id=instance_id, status=SubAgentStatus.PENDING
         )
 
@@ -167,12 +177,14 @@ class RecursiveEventLoop:
 
         Retry logic is CODE-ENFORCED - exactly 3 retries before marking as exhausted.
         """
-        result = self._context.sub_agents[instance_id]
+        # Context must be initialized (spawn_sub_agent calls _ensure_context first)
+        ctx = self._ensure_context()
+        result = ctx.sub_agents[instance_id]
         result.status = SubAgentStatus.RUNNING
 
         retry_count = 0
 
-        while retry_count <= self.MAX_RETRIES:
+        while retry_count < self.MAX_RETRIES:
             try:
                 # Dispatch the sub-agent via the dispatcher
                 agent_result = await self.dispatcher.dispatch(
@@ -186,19 +198,21 @@ class RecursiveEventLoop:
                 result.result = agent_result
                 result.retry_count = retry_count
                 result.completed_at = time.time()
-                self.registry.update_status(instance_id, SubAgentStatus.COMPLETED)
+                # Use RegistryStatus for registry operations (different enum type)
+                self.registry.update_status(instance_id, RegistryStatus.COMPLETED)
                 return result
 
             except Exception as e:
                 retry_count += 1
                 result.retry_count = retry_count
 
-                if retry_count > self.MAX_RETRIES:
+                if retry_count >= self.MAX_RETRIES:
                     # Exhausted retries - mark as failed
                     result.status = SubAgentStatus.EXHAUSTED
                     result.error = str(e)
                     result.completed_at = time.time()
-                    self.registry.update_status(instance_id, SubAgentStatus.EXHAUSTED)
+                    # Use RegistryStatus for registry operations (different enum type)
+                    self.registry.update_status(instance_id, RegistryStatus.EXHAUSTED)
                     return result
 
                 # Retry - log and continue
@@ -241,15 +255,18 @@ class RecursiveEventLoop:
         lives in the orchestrator agent's system prompt. This method
         just collects and structures the results for the agent.
         """
+        # Context must be initialized (run() or _ensure_context() must have been called)
+        ctx = self._ensure_context()
+
         results = {
             "synthesis_timestamp": time.time(),
-            "total_sub_agents": self._context.total_sub_agents,
-            "completed": self._context.completed_sub_agents,
-            "failed": self._context.failed_sub_agents,
+            "total_sub_agents": ctx.total_sub_agents,
+            "completed": ctx.completed_sub_agents,
+            "failed": ctx.failed_sub_agents,
             "sub_agent_results": {},
         }
 
-        for instance_id, result in self._context.sub_agents.items():
+        for instance_id, result in ctx.sub_agents.items():
             results["sub_agent_results"][instance_id] = {
                 "status": result.status.value,
                 "result": result.result,
@@ -266,6 +283,11 @@ class RecursiveEventLoop:
 
     def get_context(self) -> OrchestrationContext:
         """Return the current orchestration context."""
+        # Context may be None if never initialized - return a new empty context
+        if self._context is None:
+            self._context = OrchestrationContext(
+                task_id=f"orchestration_{time.time()}", task_payload=None
+            )
         return self._context
 
 

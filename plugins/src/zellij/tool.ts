@@ -106,6 +106,14 @@ Use domain + action + params for structured calls, OR query for raw CLI passthro
 - create_llm_wrapper(wrapper_name, llm_command, detect_marker?, timeout_ms?) — Create LLM completion wrapper
 - cleanup — Remove all detection temp files
 
+### exec
+- start(session?, tab?, pane?, direction?, command?, cwd?, closeOnExit?) — Start bridge or run direct command
+- run(command, timeout_ms?) — Run command through bridge
+- status — Check bridge status
+- stop — Stop bridge
+
+With closeOnExit=true, direction, and command — runs new-pane --close-on-exit directly (pane closes when command exits).
+
 ## QUERY (raw passthrough)
 Pass any zellij CLI args directly. Examples:
   query: "list-sessions"
@@ -118,7 +126,7 @@ export function createZellijTool(): ToolDefinition {
     description: TOOL_DESCRIPTION,
     args: {
       domain: tool.schema
-        .enum(["session", "pane", "tab", "pipe", "plugin", "layout", "utility", "detection"])
+        .enum(["session", "pane", "tab", "pipe", "plugin", "layout", "utility", "detection", "exec"])
         .optional()
         .describe("The zellij domain to operate on (omit if using query)"),
       action: tool.schema

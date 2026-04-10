@@ -1,4 +1,4 @@
-import { execZellij } from "../exec"
+import { execZellij, queryFocusedState } from "../exec"
 import type { Params } from "../types"
 import { Validator } from "../utils/validator"
 
@@ -21,7 +21,9 @@ export async function handlePane(action: string, params: Params): Promise<string
         if (!v.valid) return `[ERROR] pane.new: command — ${v.errors.join(", ")}`
         cmd += ` -- ${v.sanitized}`
       }
-      return execZellij(cmd)
+      await execZellij(cmd)
+      const state = await queryFocusedState()
+      return `Pane created.\n${state}`
     }
 
     case "close":

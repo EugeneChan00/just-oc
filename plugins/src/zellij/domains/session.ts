@@ -1,4 +1,4 @@
-import { execZellij, sanitize } from "../exec"
+import { execZellij, sanitize, queryFocusedState } from "../exec"
 import type { Params } from "../types"
 import { cache } from "../utils/cache"
 import { Validator } from "../utils/validator"
@@ -20,7 +20,9 @@ export async function handleSession(action: string, params: Params): Promise<str
       let cmd = `--session ${v.sanitized}`
       if (params.layout) cmd += ` --layout ${sanitize(params.layout)}`
       cache.delete("sessions_list")
-      return execZellij(cmd)
+      await execZellij(cmd)
+      const state = await queryFocusedState(v.sanitized!)
+      return `Session "${v.sanitized}" created.\n${state}`
     }
 
     case "attach": {

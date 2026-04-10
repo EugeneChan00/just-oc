@@ -116,7 +116,8 @@ class EvalDriver:
         self.runtime_log = RuntimeLog()
         self.verbose = args.verbose
         self.round_history: list[dict] = []
-        self._semaphore = asyncio.Semaphore(args.parallel)
+        self._parallel = args.parallel
+        self._semaphore = asyncio.Semaphore(args.parallel)  # re-created per eval_agent_async call
         self._memory_budget_mb = args.memory_limit
 
     def _log(self, msg: str) -> None:
@@ -206,6 +207,9 @@ class EvalDriver:
 
         Returns (merged_results, run_score).
         """
+        # Create semaphore in the current event loop (asyncio.run creates a new loop each call)
+        self._semaphore = asyncio.Semaphore(self._parallel)
+
         console.print(f"\n[bold]Evaluating: {agent_name}[/bold] (async)")
         scaffold_path = self.scaffolder.scaffold(agent_name, run_id)
         log_path = self.runtime_log.start(agent_name, run_id)
@@ -334,16 +338,24 @@ class EvalDriver:
 
     def build_optimizer_prompt(self, agent_name: str, program_text: str) -> str:
         """Build the prompt sent to the optimizer agent."""
-        # Last 5 rounds
-        last_5 = self.round_history[-5:]
-        last_5_text = json.dumps(last_5, indent=2) if last_5 else "No previous rounds."
-
-        # Top 5 rounds by score
+        # Top 3 rounds by score, with git commit refs
         sorted_rounds = sorted(self.round_history, key=lambda r: r.get("run_score", 0), reverse=True)
-        top_5 = sorted_rounds[:5]
-        top_5_text = json.dumps(top_5, indent=2) if top_5 else "No rounds yet."
+        top_3 = sorted_rounds[:3]
+        top_3_text = json.dumps(top_3, indent=2) if top_3 else "No rounds yet."
 
         agent_file = str(AGENT_DIR / f"{agent_name}.md")
+
+        # Build git commit instructions for top performers
+        commit_refs = [r["commit_ref"] for r in top_3 if r.get("commit_ref")]
+        if commit_refs:
+            git_instructions = (
+                "## Top-performing commits\n"
+                "Use `git show <ref>` or `git diff <ref>~ <ref> -- " + agent_file + "` to read the agent prompt at each top-scoring commit.\n"
+                "Study what made those versions score well before making your edits.\n\n"
+                + "\n".join(f"- `{ref}`" for ref in commit_refs)
+            )
+        else:
+            git_instructions = "No previous commits available yet — this is the first optimization round."
 
         return f"""{program_text}
 
@@ -357,11 +369,10 @@ Read the file, analyze the scores, then edit it. Do NOT return JSON — make the
 
 ---
 
-## Last 5 Rounds (most recent first)
-{last_5_text}
+## Top 3 Rounds (highest scoring)
+{top_3_text}
 
-## Top 5 Rounds (highest scoring)
-{top_5_text}
+{git_instructions}
 
 ---
 
@@ -377,20 +388,26 @@ After editing, print a short reasoning summary (2-3 sentences) of what you chang
 
     # ── Git commit per iteration ─────────────────────────────────
 
-    def git_commit(self, agent_name: str, round_num: int, score: float, reasoning: str, accepted: bool) -> None:
-        """Commit agent file changes after each optimization round."""
+    def git_commit(self, agent_name: str, round_num: int, score: float, reasoning: str) -> str | None:
+        """Commit agent file changes after each optimization round. Returns commit hash or None."""
         agent_file = AGENT_DIR / f"{agent_name}.md"
-        status = "accepted" if accepted else "rejected"
         msg = (
-            f"autoresearch: {agent_name} round {round_num} ({status}, score={score:.3f})\n\n"
+            f"autoresearch: {agent_name} round {round_num} (score={score:.3f})\n\n"
             f"{reasoning[:500]}"
         )
         try:
             subprocess.run(["git", "add", str(agent_file)], capture_output=True, timeout=10)
             subprocess.run(["git", "commit", "-m", msg], capture_output=True, timeout=10)
-            self._log(f"  Git commit: round {round_num} ({status})")
+            result = subprocess.run(
+                ["git", "rev-parse", "--short", "HEAD"],
+                capture_output=True, text=True, timeout=10,
+            )
+            commit_ref = result.stdout.strip() if result.returncode == 0 else None
+            self._log(f"  Git commit: round {round_num} ({commit_ref})")
+            return commit_ref
         except Exception as e:
             self._log(f"  Git commit failed: {e}")
+            return None
 
     # ── Load historical results ────────────────────────────────
 
@@ -448,15 +465,23 @@ After editing, print a short reasoning summary (2-3 sentences) of what you chang
             "sub_metrics": {k: v for k, v in baseline_breakdown["sub_metrics"].items() if v is not None},
         })
 
+        # Store commit ref for baseline (current HEAD)
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--short", "HEAD"],
+                capture_output=True, text=True, timeout=10,
+            )
+            baseline_ref = result.stdout.strip() if result.returncode == 0 else None
+        except Exception:
+            baseline_ref = None
+        self.round_history[-1]["commit_ref"] = baseline_ref
+
         console.print(f"\n[bold]Baseline score: {baseline_score:.3f}[/bold]")
         best_score = baseline_score
 
         for round_num in range(1, self.args.max_rounds + 1):
             console.print(f"\n{'='*60}")
             console.print(f"[bold]Round {round_num}/{self.args.max_rounds}[/bold]")
-
-            # Snapshot current prompt before optimizer runs
-            current_prompt = self.load_agent_prompt(agent_name)
 
             # Backup before optimizer touches the file
             backup_dir = Path(f"autoresearch/results/{agent_name}/backups")
@@ -482,11 +507,6 @@ After editing, print a short reasoning summary (2-3 sentences) of what you chang
                 reasoning = reasoning[-500:]
 
             # Check if the optimizer actually changed the file
-            new_prompt = self.load_agent_prompt(agent_name)
-            if new_prompt == current_prompt:
-                console.print(f"  [yellow]Round {round_num}: optimizer made no file changes, skipping[/yellow]")
-                continue
-
             console.print(f"  [dim]Optimizer edited {agent_name}.md[/dim]")
             console.print(f"  [dim]Reasoning: {reasoning[:200]}[/dim]")
 
@@ -495,26 +515,23 @@ After editing, print a short reasoning summary (2-3 sentences) of what you chang
             results, new_score = self.eval_agent(agent_name, run_id)
             new_breakdown = full_breakdown(results)
 
+            # Git commit (always — no rejection)
+            commit_ref = self.git_commit(agent_name, round_num, new_score, reasoning)
+
             self.round_history.append({
                 "round": round_num, "run_id": run_id, "run_score": new_score,
                 "categories": new_breakdown["categories"],
                 "sub_metrics": {k: v for k, v in new_breakdown["sub_metrics"].items() if v is not None},
                 "reasoning": reasoning[:500],
+                "commit_ref": commit_ref,
             })
 
-            # Accept or reject
-            accepted = new_score > best_score
-            if accepted:
+            if new_score > best_score:
                 delta = new_score - best_score
                 best_score = new_score
-                console.print(f"  [green]ACCEPTED: {new_score:.3f} (+{delta:.3f})[/green]")
+                console.print(f"  [green]Score: {new_score:.3f} (+{delta:.3f}, new best)[/green]")
             else:
-                # Restore original prompt from before optimizer ran
-                self.save_agent_prompt(agent_name, current_prompt)
-                console.print(f"  [red]REJECTED: {new_score:.3f} (best={best_score:.3f})[/red]")
-
-            # Git commit after each round
-            self.git_commit(agent_name, round_num, new_score, reasoning, accepted)
+                console.print(f"  [yellow]Score: {new_score:.3f} (best={best_score:.3f})[/yellow]")
 
         console.print(f"\n[bold]Optimization complete. Best score: {best_score:.3f}[/bold]")
 

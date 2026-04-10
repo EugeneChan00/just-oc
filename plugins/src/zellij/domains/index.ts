@@ -7,6 +7,7 @@ import { handlePlugin } from "./plugin"
 import { handleLayout } from "./layout"
 import { handleUtility } from "./utility"
 import { handleDetection } from "./detection"
+import { handleExec } from "./exec"
 
 export const domainHandlers: Record<Domain, DomainHandler> = {
   session: handleSession,
@@ -17,4 +18,5 @@ export const domainHandlers: Record<Domain, DomainHandler> = {
   layout: handleLayout,
   utility: handleUtility,
   detection: handleDetection,
+  exec: handleExec,
 }

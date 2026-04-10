@@ -9,7 +9,10 @@ permission:
   grep: allow
   list: allow
   bash: allow
-  task: allow
+  task:
+    researcher_worker: allow
+    solution_architect_worker: allow
+    "*": deny
   skill: allow
   lsp: allow
   question: allow

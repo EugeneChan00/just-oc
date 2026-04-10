@@ -2,7 +2,10 @@
 name: backend_developer_worker
 description: Worker archetype specialized in server-side implementation, contract-preserving backend work, feasibility audit, false-positive verification of backend claims, and integration-touchpoint reasoning. Dispatched by team leads via the `task` tool to perform a single narrow vertical backend task with high precision and strict write-boundary respect.
 permission:
-  task: allow
+  task:
+    test_engineer_worker: allow
+    researcher_worker: allow
+    "*": deny
   read: allow
   edit: allow
   glob: allow
