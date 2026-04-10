@@ -1,7 +1,8 @@
 import { execZellij, sanitize } from "../exec"
 import type { Params } from "../types"
-import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync, watch } from "node:fs"
-import { execSync } from "node:child_process"
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync, rmSync, constants } from "node:fs"
+import { open as openAsync } from "node:fs/promises"
+import { execFileSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
 
 const DEFAULT_TIMEOUT_MS = 30_000
@@ -33,6 +34,55 @@ async function navigateToTarget(params: Params): Promise<void> {
   }
 }
 
+/**
+ * Clean up a bridge — close pane by ID, kill listener, remove directory.
+ * Safe to call even if the directory doesn't exist or components are missing.
+ */
+function cleanupBridge(dir: string): void {
+  // Close the bridge pane if we know its ID
+  try {
+    const paneId = readFileSync(`${dir}/pane.id`, "utf-8").trim()
+    if (/^terminal_\d+$/.test(paneId)) {
+      execFileSync("zellij", ["action", "close-pane", "--pane-id", paneId],
+        { stdio: "pipe", timeout: 3000 })
+    }
+  } catch {} // pane.id may not exist or pane already closed
+
+  // Kill listener process if still running
+  try {
+    const pid = readFileSync(`${dir}/listener.pid`, "utf-8").trim()
+    if (/^\d+$/.test(pid)) {
+      process.kill(Number(pid), "SIGTERM")
+    }
+  } catch {} // PID file may not exist or process already dead
+
+  // Remove bridge directory
+  try { rmSync(dir, { recursive: true, force: true }) } catch {}
+}
+
+/**
+ * Write data to a FIFO with O_NONBLOCK + retry.
+ * Returns once data is written. Throws on timeout (no reader available).
+ */
+async function writeToFifo(pipePath: string, data: string, timeoutMs = 5000): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    try {
+      const fh = await openAsync(pipePath, constants.O_WRONLY | constants.O_NONBLOCK)
+      try { await fh.write(data) } finally { await fh.close() }
+      return
+    } catch (e: any) {
+      if (e.code === "ENXIO" || e.code === "ENOENT") {
+        // ENXIO = no reader yet; ENOENT = file not created yet
+        await new Promise(r => setTimeout(r, 50))
+        continue
+      }
+      throw e
+    }
+  }
+  throw new Error(`FIFO write timed out after ${timeoutMs}ms — no reader on ${pipePath}`)
+}
+
 function waitForResult(resultDir: string, requestId: string, timeoutMs: number): Promise<string> {
   const resultPath = `${resultDir}/${requestId}.json`
 
@@ -44,27 +94,23 @@ function waitForResult(resultDir: string, requestId: string, timeoutMs: number):
   }
 
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      watcher.close()
+    const poll = setInterval(() => {
+      if (existsSync(resultPath)) {
+        clearInterval(poll)
+        try {
+          const content = readFileSync(resultPath, "utf-8")
+          unlinkSync(resultPath)
+          resolve(content)
+        } catch (e) {
+          reject(new Error(`Failed to read result: ${e}`))
+        }
+      }
+    }, 25)
+
+    setTimeout(() => {
+      clearInterval(poll)
       reject(new Error(`Command timed out after ${timeoutMs}ms`))
     }, timeoutMs)
-
-    const watcher = watch(resultDir, (_, filename) => {
-      if (filename === `${requestId}.json`) {
-        watcher.close()
-        clearTimeout(timer)
-        // Small delay to ensure the rename is fully visible
-        setTimeout(() => {
-          try {
-            const content = readFileSync(resultPath, "utf-8")
-            unlinkSync(resultPath)
-            resolve(content)
-          } catch (e) {
-            reject(new Error(`Failed to read result: ${e}`))
-          }
-        }, 10)
-      }
-    })
   })
 }
 
@@ -73,12 +119,18 @@ BRIDGE_DIR="$1"
 CMD_PIPE="\${BRIDGE_DIR}/cmd.pipe"
 RESULT_DIR="\${BRIDGE_DIR}/results"
 
+# Open FIFO first — PID file signals "ready" to parent
+exec 3<> "\$CMD_PIPE"
+
 echo "$$" > "\${BRIDGE_DIR}/listener.pid"
+
+# Fallback pane ID from zellij env var (in case new-pane stdout didn't return it)
+[ -n "\$ZELLIJ_PANE_ID" ] && [ ! -f "\${BRIDGE_DIR}/pane.id" ] && echo "terminal_\$ZELLIJ_PANE_ID" > "\${BRIDGE_DIR}/pane.id"
+
+trap 'exec 3<&-; echo "[shell-bridge] Stopped"' EXIT TERM INT
+
 echo "[shell-bridge] Listener active (pid $$)"
 echo "[shell-bridge] Pipe: \${CMD_PIPE}"
-
-# Open FIFO read-write to prevent EOF when writers disconnect
-exec 3<> "\$CMD_PIPE"
 
 while IFS= read -r request <&3; do
   [ -z "\$request" ] && continue
@@ -119,25 +171,14 @@ while IFS= read -r request <&3; do
     > "\$tmp"
   mv "\$tmp" "\${RESULT_DIR}/\${request_id}.json"
 done
-
-exec 3<&-
-echo "[shell-bridge] Stopped"
 `
-
-/**
- * Clean up a stale bridge directory — removes FIFO, PID file, results, scripts.
- * Safe to call even if the directory doesn't exist.
- */
-function cleanupBridge(dir: string): void {
-  try { execSync(`rm -rf "${dir}"`, { stdio: "pipe" }) } catch {}
-}
 
 export async function handleExec(action: string, params: Params): Promise<string> {
   switch (action) {
     case "start": {
       // Check jq availability
       try {
-        execSync("which jq", { stdio: "pipe" })
+        execFileSync("which", ["jq"], { stdio: "pipe" })
       } catch {
         return "[ERROR] exec.start requires 'jq' to be installed. Install it with: apt install jq"
       }
@@ -152,26 +193,21 @@ export async function handleExec(action: string, params: Params): Promise<string
       if (existsSync(`${dir}/listener.pid`)) {
         try {
           const pid = readFileSync(`${dir}/listener.pid`, "utf-8").trim()
-          execSync(`kill -0 ${pid} 2>/dev/null`, { stdio: "pipe" })
+          process.kill(Number(pid), 0)
           return `Bridge already running for session "${session}" (pid ${pid}, dir: ${dir})`
         } catch {
-          // Stale bridge — clean up before recreating
+          // Stale bridge — fall through to cleanup
         }
       }
 
-      // Always clean up stale state before creating (fixes mkfifo EEXIST)
+      // Clean up any stale bridge (handles crash case where PID file may not exist)
       cleanupBridge(dir)
 
       // Create bridge directory structure
       mkdirSync(resultDir, { recursive: true })
 
       // Create named pipe
-      try {
-        execSync(`mkfifo "${pipePath}"`, { stdio: "pipe" })
-      } catch (e) {
-        cleanupBridge(dir)
-        return `[ERROR] Failed to create FIFO at ${pipePath}: ${e instanceof Error ? e.message : String(e)}`
-      }
+      execFileSync("mkfifo", [pipePath])
 
       // Write listener script
       writeFileSync(scriptPath, LISTENER_SCRIPT, { mode: 0o755 })
@@ -180,30 +216,38 @@ export async function handleExec(action: string, params: Params): Promise<string
       await navigateToTarget(params)
 
       // Launch listener or direct command
-      const direction = sanitize(params.direction)
+      const direction = sanitize(params.direction) || "down"
       const closeOnExit = params.closeOnExit === true
       const command = params.command ? String(params.command) : null
 
-      if (closeOnExit && command && direction) {
+      if (closeOnExit && command) {
         // Direct command mode: run single command in new pane, close on exit
-        let cmd = `action new-pane --close-on-exit -- ${command}`
+        let cmd = `action new-pane --close-on-exit --direction ${direction}`
         if (params.cwd) cmd += ` --cwd "${sanitize(params.cwd)}"`
+        cmd += ` -- ${command}`
         await execZellij(cmd)
         return `Command executed in new pane with close-on-exit: ${command}`
-      } else if (direction) {
-        // New pane mode - listener bridge
+      } else if (params.target_pane_id) {
+        // Inject into existing pane by ID — no focus-guessing
+        const paneId = sanitize(params.target_pane_id)
+        if (!/^terminal_\d+$/.test(paneId)) {
+          return `[ERROR] Invalid pane ID format: "${paneId}". Expected terminal_N.`
+        }
+        let launchCmd = `bash "${scriptPath}" "${dir}"`
+        if (params.cwd) launchCmd = `cd "${sanitize(params.cwd)}" && ${launchCmd}`
+        await execZellij(`action write-chars --pane-id ${paneId} "${launchCmd}"`)
+        await execZellij(`action write --pane-id ${paneId} 10`) // send Enter
+        writeFileSync(`${dir}/pane.id`, paneId)
+      } else {
+        // New pane mode (default)
         let cmd = `action new-pane --direction ${direction}`
         if (params.cwd) cmd += ` --cwd "${sanitize(params.cwd)}"`
         cmd += ` -- bash "${scriptPath}" "${dir}"`
-        await execZellij(cmd)
-      } else {
-        // Inject into currently focused pane
-        const launchCmd = `bash "${scriptPath}" "${dir}"`
-        await execZellij(`action write-chars "${launchCmd}"`)
-        await execZellij("action write 10") // send Enter
+        const paneId = (await execZellij(cmd)).trim()
+        if (paneId) writeFileSync(`${dir}/pane.id`, paneId)
       }
 
-      // Wait for PID file to appear
+      // Wait for PID file to appear (signals listener is ready + FIFO is open)
       const deadline = Date.now() + 5000
       while (!existsSync(`${dir}/listener.pid`) && Date.now() < deadline) {
         await new Promise(r => setTimeout(r, 100))
@@ -214,7 +258,8 @@ export async function handleExec(action: string, params: Params): Promise<string
       }
 
       const pid = readFileSync(`${dir}/listener.pid`, "utf-8").trim()
-      return `Bridge started for session "${session}" (pid ${pid}, dir: ${dir})`
+      const paneIdFile = existsSync(`${dir}/pane.id`) ? readFileSync(`${dir}/pane.id`, "utf-8").trim() : "unknown"
+      return `Bridge started for session "${session}" (pid ${pid}, pane ${paneIdFile}, dir: ${dir})`
     }
 
     case "run": {
@@ -233,7 +278,7 @@ export async function handleExec(action: string, params: Params): Promise<string
 
       try {
         const pid = readFileSync(`${dir}/listener.pid`, "utf-8").trim()
-        execSync(`kill -0 ${pid} 2>/dev/null`, { stdio: "pipe" })
+        process.kill(Number(pid), 0)
       } catch {
         return `[ERROR] Bridge listener is dead for session "${session}". Call exec.start to restart.`
       }
@@ -241,13 +286,9 @@ export async function handleExec(action: string, params: Params): Promise<string
       const timeoutMs = Number(params.timeout_ms) || DEFAULT_TIMEOUT_MS
       const requestId = `${Date.now()}-${randomBytes(4).toString("hex")}`
 
-      // Write command to named pipe (append mode for FIFO)
+      // Write command to named pipe (async, non-blocking)
       const request = JSON.stringify({ request_id: requestId, command }) + "\n"
-      try {
-        execSync(`printf '%s' '${request.replace(/'/g, "'\\''")}' > "${pipePath}"`, { stdio: "pipe", timeout: 5000 })
-      } catch (e) {
-        return `[ERROR] Failed to write to bridge pipe: ${e instanceof Error ? e.message : String(e)}`
-      }
+      await writeToFifo(pipePath, request)
 
       // Wait for result
       try {
@@ -272,11 +313,25 @@ export async function handleExec(action: string, params: Params): Promise<string
 
       const pid = readFileSync(`${dir}/listener.pid`, "utf-8").trim()
       try {
-        execSync(`kill -0 ${pid} 2>/dev/null`, { stdio: "pipe" })
-        return `Bridge alive for session "${session}" (pid ${pid}, dir: ${dir})`
+        process.kill(Number(pid), 0)
       } catch {
         return `Bridge dead for session "${session}" (stale pid ${pid})`
       }
+
+      // Check pane health if we have a pane ID
+      const paneIdPath = `${dir}/pane.id`
+      if (existsSync(paneIdPath)) {
+        const paneId = readFileSync(paneIdPath, "utf-8").trim()
+        try {
+          const screen = await execZellij(`action dump-screen --pane-id ${paneId}`)
+          const lastLines = screen.split("\n").filter((l: string) => l.trim()).slice(-5).join("\n")
+          return `Bridge alive for session "${session}" (pid ${pid}, pane ${paneId}, dir: ${dir})\nRecent output:\n${lastLines}`
+        } catch {
+          return `Bridge PID alive but pane ${paneId} not found for session "${session}". Restart needed.`
+        }
+      }
+
+      return `Bridge alive for session "${session}" (pid ${pid}, dir: ${dir})`
     }
 
     case "stop": {
@@ -288,30 +343,20 @@ export async function handleExec(action: string, params: Params): Promise<string
         return `No bridge found for session "${session}"`
       }
 
-      // Send shutdown command
+      // Send shutdown command via FIFO
       if (existsSync(pipePath)) {
         try {
           const shutdownCmd = JSON.stringify({ request_id: "shutdown", command: "__shutdown__" }) + "\n"
-          execSync(`printf '%s' '${shutdownCmd.replace(/'/g, "'\\''")}' > "${pipePath}"`, { stdio: "pipe", timeout: 5000 })
+          await writeToFifo(pipePath, shutdownCmd, 2000)
         } catch {
-          // Pipe may be broken, proceed to force kill
+          // Pipe may be broken or no reader — proceed to force cleanup
         }
       }
 
-      // Wait briefly for graceful exit, then force kill
-      if (existsSync(`${dir}/listener.pid`)) {
-        const pid = readFileSync(`${dir}/listener.pid`, "utf-8").trim()
-        await new Promise(r => setTimeout(r, 500))
-        try {
-          execSync(`kill -0 ${pid} 2>/dev/null`, { stdio: "pipe" })
-          // Still alive — force kill
-          execSync(`kill ${pid} 2>/dev/null`, { stdio: "pipe" })
-        } catch {
-          // Already dead
-        }
-      }
+      // Wait briefly for graceful exit
+      await new Promise(r => setTimeout(r, 500))
 
-      // Clean up
+      // Force cleanup — closes pane, kills process, removes dir
       cleanupBridge(dir)
       return `Bridge stopped and cleaned up for session "${session}"`
     }

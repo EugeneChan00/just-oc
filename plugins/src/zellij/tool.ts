@@ -107,12 +107,10 @@ Use domain + action + params for structured calls, OR query for raw CLI passthro
 - cleanup — Remove all detection temp files
 
 ### exec
-- start(session?, tab?, pane?, direction?, command?, cwd?, closeOnExit?) — Start bridge or run direct command
-- run(command, timeout_ms?) — Run command through bridge
-- status — Check bridge status
-- stop — Stop bridge
-
-With closeOnExit=true, direction, and command — runs new-pane --close-on-exit directly (pane closes when command exits).
+- start(direction?, cwd?, target_pane_id?, session?, tab?, pane?, command?, closeOnExit?) — Start shell bridge. Creates new pane (default: down). Returns pane ID. Use target_pane_id to inject into existing pane by ID. With closeOnExit=true + command, runs command in new pane that closes on exit (no bridge).
+- run(command, session?, timeout_ms?) — Execute command in bridge, returns JSON {request_id, stdout, stderr, exit_code, cwd, duration_ms}. Shell state persists.
+- status(session?) — Check bridge + pane health, shows recent output
+- stop(session?) — Stop bridge, close pane, clean up
 
 ## QUERY (raw passthrough)
 Pass any zellij CLI args directly. Examples:
