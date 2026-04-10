@@ -76,6 +76,8 @@ export interface BackgroundTask {
   isUnstableAgent?: boolean
   /** Category used for this task (e.g., 'quick', 'visual-engineering') */
   category?: string
+  /** Whether the task was launched in background (async) mode */
+  background?: boolean
 
   /** Last message count for stability detection */
   lastMsgCount?: number
@@ -102,6 +104,8 @@ export interface LaunchInput {
   skillContent?: string
   category?: string
   sessionPermission?: SessionPermissionRule[]
+  /** Whether to run in background (async) mode */
+  background?: boolean
 }
 
 export interface ResumeInput {

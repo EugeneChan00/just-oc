@@ -1,11 +1,16 @@
 import { execZellij, sanitize } from "../exec"
 import type { Params } from "../types"
+import { Validator } from "../utils/validator"
 
 export async function handleTab(action: string, params: Params): Promise<string> {
   switch (action) {
     case "new": {
       let cmd = "action new-tab"
-      if (params.name) cmd += ` --name "${sanitize(params.name)}"`
+      if (params.name) {
+        const v = Validator.validateString(String(params.name), "tab name", 64)
+        if (!v.valid) return `[ERROR] tab.new: name — ${v.errors.join(", ")}`
+        cmd += ` --name "${v.sanitized}"`
+      }
       if (params.layout) cmd += ` --layout ${sanitize(params.layout)}`
       return execZellij(cmd)
     }
@@ -14,9 +19,9 @@ export async function handleTab(action: string, params: Params): Promise<string>
       return execZellij("action close-tab")
 
     case "rename": {
-      const name = sanitize(params.name)
-      if (!name) return "[ERROR] tab.rename requires params.name"
-      return execZellij(`action rename-tab "${name}"`)
+      const v = Validator.validateString(String(params.name ?? ""), "tab name", 64)
+      if (!v.valid) return `[ERROR] tab.rename: ${v.errors.join(", ")}`
+      return execZellij(`action rename-tab "${v.sanitized}"`)
     }
 
     case "undo_rename":
@@ -29,14 +34,14 @@ export async function handleTab(action: string, params: Params): Promise<string>
     }
 
     case "go_to_name": {
-      const name = sanitize(params.name)
-      if (!name) return "[ERROR] tab.go_to_name requires params.name"
-      return execZellij(`action go-to-tab-name "${name}"`)
+      const v = Validator.validateString(String(params.name ?? ""), "tab name", 64)
+      if (!v.valid) return `[ERROR] tab.go_to_name: ${v.errors.join(", ")}`
+      return execZellij(`action go-to-tab-name "${v.sanitized}"`)
     }
 
     case "move": {
-      const dir = sanitize(params.direction)
-      if (!dir) return "[ERROR] tab.move requires params.direction (left|right)"
+      const dir = String(params.direction ?? "").toLowerCase()
+      if (!["left", "right"].includes(dir)) return '[ERROR] tab.move: direction must be "left" or "right"'
       return execZellij(`action move-tab ${dir}`)
     }
 

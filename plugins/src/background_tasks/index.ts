@@ -4,63 +4,42 @@ import {
   createBackgroundOutput,
   createBackgroundCancel,
 } from "./tools"
-import type { BackgroundManager } from "./features/background-agent"
-import type { BackgroundTask, LaunchInput } from "./features/background-agent/types"
-
-/**
- * In-memory BackgroundManager implementation.
- * Provides task lifecycle management for the background task tools.
- * The full oh-my-openagent BackgroundManager (in features/background-agent/manager.ts)
- * can replace this once its deep dependency chain is wired up.
- */
-class SimpleBackgroundManager implements BackgroundManager {
-  private tasks = new Map<string, BackgroundTask>()
-  private taskCounter = 0
-
-  async launch(input: LaunchInput): Promise<BackgroundTask> {
-    const id = `bg_${++this.taskCounter}_${Date.now()}`
-    const task: BackgroundTask = {
-      id,
-      parentSessionID: input.parentSessionID,
-      parentMessageID: input.parentMessageID,
-      description: input.description,
-      prompt: input.prompt,
-      agent: input.agent,
-      status: "pending",
-      queuedAt: new Date(),
-    }
-    this.tasks.set(id, task)
-    return task
-  }
-
-  getTask(taskId: string): BackgroundTask | undefined {
-    return this.tasks.get(taskId)
-  }
-
-  getAllDescendantTasks(sessionID: string): BackgroundTask[] {
-    return Array.from(this.tasks.values()).filter(
-      (t) => t.parentSessionID === sessionID
-    )
-  }
-
-  async cancelTask(
-    taskId: string,
-    _options: { source: string; abortSession?: boolean; skipNotification?: boolean }
-  ): Promise<boolean> {
-    const task = this.tasks.get(taskId)
-    if (!task) return false
-    task.status = "cancelled"
-    task.completedAt = new Date()
-    return true
-  }
-}
+import { WorkingBackgroundManager } from "./features/background-agent/working-manager"
 
 const BackgroundTaskPlugin: Plugin = async (ctx) => {
-  const manager = new SimpleBackgroundManager()
+  const manager = new WorkingBackgroundManager(ctx.client, ctx.directory)
+
+  // Fetch available agents, filtered by task permission
+  // Respects explicit task:deny, wildcard *:deny, and tools.task=false
+  let agentNames: string[] = []
+  try {
+    const resp = await (ctx.client as any).app.agents()
+    const agents: Array<{
+      name?: string
+      mode?: string
+      permission?: Record<string, string>
+      tools?: Record<string, boolean>
+    }> = (resp as any).data ?? (resp as any).response ?? []
+    agentNames = agents
+      .filter((a) => {
+        if (!a.name) return false
+        const perm = a.permission ?? {}
+        // Explicit task permission takes precedence
+        if (perm.task === "deny") return false
+        if (perm.task === "allow" || perm.task === "ask") return true
+        // Wildcard deny blocks all tools including task
+        if (perm["*"] === "deny") return false
+        // Check tools map
+        if (a.tools?.task === false) return false
+        return true
+      })
+      .map((a) => a.name!)
+      .sort()
+  } catch {}
 
   return {
     tool: {
-      background_task: createBackgroundTask(manager, ctx.client),
+      task: createBackgroundTask(manager, ctx.client, agentNames),
       background_output: createBackgroundOutput(manager, ctx.client),
       background_cancel: createBackgroundCancel(manager, ctx.client),
     },

@@ -34,7 +34,7 @@ Use domain + action + params for structured calls, OR query for raw CLI passthro
 - toggle_floating — Toggle floating panes
 - toggle_fullscreen — Toggle fullscreen
 - toggle_embed_float — Toggle embed/float
-- pin — Pin pane
+- pin — Toggle pin on floating pane
 - toggle_frames — Toggle pane frames
 - clear — Clear pane
 - dump_screen(output_path?) — Dump screen content
@@ -42,6 +42,7 @@ Use domain + action + params for structured calls, OR query for raw CLI passthro
 - rename(name) — Rename pane
 - undo_rename — Undo pane rename
 - swap(direction) — Swap pane (direction: left|right|up|down)
+- stack(pane_ids) — Stack panes by IDs (e.g. ["terminal_1", "terminal_2"])
 - exec(command) — Execute command in new pane
 - write(text, submit?) — Write text to pane (submit sends Enter)
 - info — Get pane layout info
@@ -63,17 +64,17 @@ Use domain + action + params for structured calls, OR query for raw CLI passthro
 
 ### pipe
 - send(payload, pipe_name?, plugin_url?, args?) — Send pipe message
-- to_plugin(payload, plugin_url, pipe_name?) — Pipe to plugin
+- to_plugin(payload, plugin_url, pipe_name?, configuration?) — Pipe to plugin with optional configuration
 - broadcast(payload, pipe_name) — Broadcast pipe message
-- action(payload, pipe_name?, plugin_url?, floating?, in_place?, cwd?, title?, skip_cache?) — Advanced pipe action
+- action(payload, pipe_name?, plugin_url?, configuration?, force_launch?, floating?, in_place?, skip_cache?, cwd?, title?) — Advanced pipe action with full options
 - with_response(payload, pipe_name?, plugin_url?) — Pipe with response
 - from_file(file_path, pipe_name?, plugin_url?) — Pipe file contents
 
 ### plugin
-- launch(plugin_url, floating?, in_place?, skip_cache?, width?, height?, x?, y?) — Launch plugin
-- action_launch(plugin_url, floating?, in_place?, skip_cache?) — Launch plugin (action)
-- launch_or_focus(plugin_url, floating?) — Launch or focus plugin
-- start_or_reload(plugin_url) — Start or reload plugin
+- launch(plugin_url, configuration?, floating?, in_place?, skip_cache?, width?, height?, x?, y?, pinned?) — Launch plugin with full options
+- action_launch(plugin_url, configuration?, floating?, in_place?, skip_cache?) — Launch plugin (action)
+- launch_or_focus(plugin_url, configuration?, floating?) — Launch or focus plugin
+- start_or_reload(plugin_url, configuration?) — Start or reload plugin
 - list_aliases — List plugin aliases
 - info(plugin_url) — Get plugin info
 - list_running — List running plugins
@@ -81,11 +82,12 @@ Use domain + action + params for structured calls, OR query for raw CLI passthro
 ### layout
 - dump(output_path?) — Dump current layout
 - save(layout_name, layouts_dir?) — Save current layout to file
-- apply(layout_name) — Apply a layout
-- list(layouts_dir?) — List available layouts
-- load(layout_name) — Load a layout
+- apply(layout_name, session_name?) — Apply a layout (optionally to a specific session)
+- list(layouts_dir?) — List available layouts (with caching)
+- load(layout_name, layouts_dir?) — Load layout content from file
 - new_tab_with(layout_name, tab_name?) — New tab with layout
-- validate(layout_path) — Validate layout file
+- validate(layout_path) — Validate layout file structure
+- convert(input_path, output_path, from_format, to_format) — Convert layout between KDL and JSON
 
 ### utility
 - run_command(command, direction?) — Run command in new pane
@@ -124,7 +126,7 @@ export function createZellijTool(): ToolDefinition {
         .optional()
         .describe("The action to perform within the domain"),
       params: tool.schema
-        .record(tool.schema.unknown())
+        .record(tool.schema.string(), tool.schema.unknown())
         .optional()
         .describe("Action-specific parameters as key-value pairs"),
       query: tool.schema

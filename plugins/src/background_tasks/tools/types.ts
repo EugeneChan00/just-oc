@@ -2,6 +2,7 @@ export interface BackgroundTaskArgs {
   description: string
   prompt: string
   agent: string
+  background: boolean
 }
 
 export interface BackgroundOutputArgs {
