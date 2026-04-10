@@ -95,8 +95,11 @@ while IFS= read -r request <&3; do
   stdout_f=\$(mktemp); stderr_f=\$(mktemp)
 
   set +e
+  # Override exit builtin to prevent terminating the listener
+  exit() { return "\${1:-0}"; }
   eval "\$command" >"\$stdout_f" 2>"\$stderr_f"
   ec=\$?
+  unset -f exit 2>/dev/null
   set -e
 
   end_ns=\$(date +%s%N)
