@@ -128,8 +128,10 @@ export async function handlePane(action: string, params: Params): Promise<string
       const v = Validator.validateText(String(params.text ?? ""))
       if (!v.valid) return `[ERROR] pane.write: ${v.errors.join(", ")}`
       const escaped = v.sanitized!.replace(/"/g, '\\"')
-      let cmd = `action write-chars "${escaped}"`
-      if (params.submit) cmd += " && zellij action write 10"
+      const paneId = params.paneId ? String(params.paneId) : null
+      const paneFlag = paneId ? ` --pane-id ${paneId}` : ""
+      let cmd = `action write-chars${paneFlag} "${escaped}"`
+      if (params.submit) cmd += ` && zellij action write 10${paneFlag}`
       return execZellij(cmd)
     }
 
